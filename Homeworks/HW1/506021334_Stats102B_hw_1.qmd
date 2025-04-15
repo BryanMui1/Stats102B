@@ -323,4 +323,21 @@ We can see that the step size was initially 0.02, but at the very first few iter
 
 # Problem 2
 
+**To understand the sensitivity of the gradient descent algorithm and its variants to the “shape” of the function, the two data sets provided (dataset1.csv, dataset2.csv) will be used**
+
+They contain 100 observations for a response $y$ and 20 predictors $x_j, j = 1, · · · , 20$
+
+## Part (a) 
+
+Using the gradient descent code provided (both in R and Python) obtain the estimates of the regression coefficient, using both a constant step size and backtracking line search.
+
+```{r regression_constant_step}
+
+```
+
+
+```{r regression_bls}
+
+```
+
 

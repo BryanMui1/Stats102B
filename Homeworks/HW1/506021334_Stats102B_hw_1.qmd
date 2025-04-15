@@ -11,6 +11,12 @@ format:
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
+```{r options}
+#| include: false
+options(max.print = 50)
+```
+
+
 # Problem 1 
 
 ## Part a 
@@ -59,16 +65,16 @@ Since f'(x) = 0 at 0 and f''(x) > 0 at that point, **we have a min at x = 0, and
 
 Use the gradient descent algorithm with **constant step size** and with **back-tracking line search** to calculate $x_{min}$
 
-Constant step size descent is implemented as follows:  
+**Constant step size descent is implemented as follows:**
 
-1. Select a random starting point  
+1. Select a random starting point $x_0$    
 2. While stopping criteria < tolerance, do:  
 
   * Select $η_k$(as a constant)  
   * Calculate $x_{(k+1)} = x_k - η_k * ∇(f(x_k))$  
   * Calculate the value of stopping criterion  
   
-Stopping criteria: True if $∣|∇(f(x_k)|| ≤ ϵ$ 
+Stopping criteria: Stop if $∣|∇(f(x_k)||_2 ≤ ϵ$ 
   
 
 ```{r grad_descent_backtracking_constant_step}
@@ -133,7 +139,7 @@ gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_si
 
 Running the gradient descent algorithm with fixed step size:
 
-```{r minimizing_pt_1}
+```{r minimizing_constant_step}
 minimize <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.01)
 print(minimize)
 
@@ -141,7 +147,118 @@ cat("The functions stopped after", minimize$last_iter - 1, "iterations \n")
 cat("The function's point of minimization is", "(", minimize$betas[minimize$last_iter], "," , minimize$obj_values[minimize$last_iter], ") \n")
 ```
 
-Backtracking Line Search is implemented as follows:
+**Backtracking Line Search is implemented as follows:**  
+
+1. Select a random starting point $x_0$    
+2. While stopping criteria < tolerance, do:  
+
+  * Select $η_k$ using backtracking line search
+  * Calculate $x_{(k+1)} = x_k - η_k * ∇(f(x_k))$  
+  * Calculate the value of stopping criterion  
+  
+Backtracking Line Search:  
+
+  * Set $η^0 > 0$(usually a large value), $ϵ ∈ (0,1)$ and $τ ∈ (0,1)$
+  * Set $η_1 = η^0$ 
+  * At iteration k, set $η_k <- η_{k-1}$
+    1. Check whether the Armijo Condition holds: 
+    $$
+    h(η_k) ≤ h(0) + ϵη_kh'(0)
+    $$  
+      where $h(η_k) = f(x_k) − η_k ∇f(x_k)$
+    2. 
+      + If yes(condition holds), terminate and keep $η_k$
+      + If no, set $η_k = τη_k$ and go to Step 1
+
+Stopping criteria: Stop if $∣|∇(f(x_k)||_2 ≤ ϵ$ 
+
+Other note: Since we need h'(0) for the Armijo condition calculation, that is given by:  
+$$
+h'(0) = -[∇f(x_k)]^\top ∇f(x_k)
+$$
+Since we are minimizing x, we have a one dimensional beta, we can simplify to  
+$$
+h'(0) = -||∇f(x_k)||^2
+$$
+
+To summarize, backtracking line search chooses the step size by ensuring the Armijo condition always holds. If the Armijo condition doesn't hold, we are probably overshooting, hence the step size gets updated iteratively 
+
+```{r backtracking_line_search_grad_descent}
+gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8) {
+  # Step 1: Initialize and select a random stopping point
+  # Initialize
+  set.seed(777) # example seeding 
+  last_iter <- 0 # the last iteration ran
+  max_iter <- max_iter # max iterations before terminating if minimum isn't found
+  tolerance <- tol # tolerance for the stopping criteria 
+  epsilon <- epsilon # Epsilon used in the step size criteria calculation
+  tau <- tau # tau used in the step size criteria calculation
+  obj_values <- numeric(max_iter) # Stores the value of f(x)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  betas <- numeric(max_iter) # Stores the value of x guesses
+  x0 <- runif(1, min=-10, max=10) # our first guess is somewhere between -10 to 10
+  eta <- 1 # our initial step size
+  
+  # Set the objective function to the function to be minimized 
+  # Objective function: f(x)
+  obj_function <- function(x) {
+    return(x^4 + 2*(x^2) + 1) 
+  }
+  
+  # Gradient function: d/dx of f(x)
+  gradient <- function(x) {
+    return(4*x^3 + 4*x)
+  }
+  
+  # Armijo condition function
+  # returns TRUE or FALSE whether the condition is satisfied or not
+  armijo <- function(eta_k, x_k, epsilon) {
+    h <- function(eta_k, x_k) {
+      return(obj_function(x_k) - (eta_k * grad(x_k)))
+    }
+    h_prime <- "init"
+    # check the armijo condition
+  }
+  
+  # Append the first guess to the obj_values and betas vector
+  betas[1] <- x0
+  obj_values[1] <- obj_function(x0)
+  
+  # Step 2: While stopping criteria < tolerance, do:
+  for (iter in 1:max_iter) { # the iteration goes n = 1, 2, 3, 4, but the arrays of our output starts at iter = 0 and guess x0
+    # Select eta(step size) using backtracking line search
+    if(iter > 1) {
+      sub_iter = 1
+      while(!armijo(eta) || sub_iter < 10000) {
+        eta <- eta * tau
+        sub_iter <- sub_iter + 1
+      }
+    }
+    
+    # Calculate the next guess of x_k+1, calculate f(x_k+1), set eta(x_k+1)
+    betas[iter + 1] <- betas[iter] - (eta * gradient(betas[iter]))
+    obj_values[iter + 1] <- obj_function(betas[iter + 1])
+    eta_values[iter + 1] <- eta
+    
+    # Calculate the value of the stopping criterion
+    stop_criteria <- abs(gradient(betas[iter + 1]))
+    
+    # If stopping criteria less than tolerance, break
+    if(is.na(stop_criteria) || stop_criteria <= tolerance) { 
+      last_iter <- iter + 1
+      break 
+    }
+    
+    # if we never set last iter, then we hit the max number of iterations and need to set
+    if(last_iter == 0) { last_iter <- max_iter }
+    
+    # end algorithm
+  }
+  
+  return(list(betas = betas, obj_values = obj_values, eta_values = eta_values, last_iter = last_iter)) # in this case, beta(predictors) are the x values, obj_values are f(x), eta is the step size, last iter is the value in the vector of the final iteration before stopping
+}
+```
+
 
 ### 1) For the constant step size version of gradient descent, discuss how you selected the step size used in your code
 

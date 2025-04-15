@@ -251,7 +251,7 @@ minimum point}
 \subsubsection{0)}\label{section}
 
 Use the gradient descent algorithm with \textbf{constant step size} and
-with \textbf{back-tracking line search} to calculate \textbf{x(min)}
+with \textbf{back-tracking line search} to calculate \(x_min\)
 
 Backtracking line search is implemented as follows:
 
@@ -267,14 +267,14 @@ Backtracking line search is implemented as follows:
 \begin{itemize}
 \tightlist
 \item
-  Select η\_k(as a constant)\\
+  Select \(η_k\)(as a constant)\\
 \item
-  Calculate \[ x_{(k+1)} = x_k - η_k * ∇(f(x_k)) \]\\
+  Calculate \(x_{(k+1)} = x_k - η_k * ∇(f(x_k))\)\\
 \item
   Calculate the value of stopping criterion
 \end{itemize}
 
-Stopping criteria: True if \[ ∣f(x_{k+1}) − f(x_{k})∣ ≤ ϵ \]
+Stopping criteria: True if \(∣f(x_{k+1}) − f(x_{k})∣ ≤ ϵ\)
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -282,12 +282,16 @@ Stopping criteria: True if \[ ∣f(x_{k+1}) − f(x_{k})∣ ≤ ϵ \]
 
 \NormalTok{gradient\_descent\_backtracking\_constant\_step }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(}\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{step\_size =} \DecValTok{1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{tau =} \FloatTok{0.8}\NormalTok{) \{}
   \CommentTok{\# Initialize}
+  \FunctionTok{set.seed}\NormalTok{(}\DecValTok{777}\NormalTok{)}
 \NormalTok{  iter }\OtherTok{\textless{}{-}} \DecValTok{1}
 \NormalTok{  step\_size }\OtherTok{\textless{}{-}}\NormalTok{ step\_size}
 \NormalTok{  max\_iter }\OtherTok{\textless{}{-}}\NormalTok{ max\_iter}
 \NormalTok{  tol }\OtherTok{\textless{}{-}}\NormalTok{ tol}
 \NormalTok{  epsilon }\OtherTok{\textless{}{-}}\NormalTok{ epsilon}
 \NormalTok{  tau }\OtherTok{\textless{}{-}}\NormalTok{ tau}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(step\_size, max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  x0 }\OtherTok{\textless{}{-}} \FunctionTok{runif}\NormalTok{(}\DecValTok{1}\NormalTok{, }\AttributeTok{min=}\SpecialCharTok{{-}}\DecValTok{10}\NormalTok{, }\AttributeTok{max=}\DecValTok{10}\NormalTok{) }\CommentTok{\# our first guess is somewhere between 0{-}1}
   
   \CommentTok{\# Set the objective function to the function to be minimized }
   \CommentTok{\# Objective function: f(x)}
@@ -304,7 +308,7 @@ Stopping criteria: True if \[ ∣f(x_{k+1}) − f(x_{k})∣ ≤ ϵ \]
     
 \NormalTok{  \}}
   
-  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values))}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values)) }\CommentTok{\# in this case, beta(predictors) are the x values, obj\_values are f(x), and eta is the step size }
 \NormalTok{\}}
 \end{Highlighting}
 \end{Shaded}
@@ -317,9 +321,15 @@ Theoretical Analysis proves that for functions with a unique global
 minimum, the step size should be within 0 to 1/L to converge to the
 unique global minimum
 
-\subsubsection{2)}\label{section-1}
+\subsubsection{\texorpdfstring{2) For both versions of the gradient
+descent algorithm, plot the value of \(f(x_k)\) as a function of k the
+number of
+iterations}{2) For both versions of the gradient descent algorithm, plot the value of f(x\_k) as a function of k the number of iterations}}\label{for-both-versions-of-the-gradient-descent-algorithm-plot-the-value-of-fx_k-as-a-function-of-k-the-number-of-iterations}
 
-\subsubsection{3)}\label{section-2}
+\subsubsection{\texorpdfstring{3) or the the gradient descent method
+with backtracking line search, plot the step size \(η_k\) selected at
+step k as a function of k. Comment on the
+result}{3) or the the gradient descent method with backtracking line search, plot the step size η\_k selected at step k as a function of k. Comment on the result}}\label{or-the-the-gradient-descent-method-with-backtracking-line-search-plot-the-step-size-ux3b7_k-selected-at-step-k-as-a-function-of-k.-comment-on-the-result}
 
 
 

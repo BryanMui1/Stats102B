@@ -56,58 +56,99 @@ Since f'(x) = 0 at 0 and f''(x) > 0 at that point, **we have a min at x = 0, and
 ## Part b 
 
 ### 0) 
-Use the gradient descent algorithm with **constant step size** and with **back-tracking line search** to calculate **x(min)**
 
-Backtracking line search is implemented as follows:  
+Use the gradient descent algorithm with **constant step size** and with **back-tracking line search** to calculate $x_{min}$
+
+Constant step size descent is implemented as follows:  
 
 1. Select a random starting point  
 2. While stopping criteria < tolerance, do:  
 
-  * Select η_k(as a constant)  
-  * Calculate $$ x_{(k+1)} = x_k - η_k * ∇(f(x_k)) $$  
+  * Select $η_k$(as a constant)  
+  * Calculate $x_{(k+1)} = x_k - η_k * ∇(f(x_k))$  
   * Calculate the value of stopping criterion  
   
-Stopping criteria: True if $$ ∣f(x_{k+1}) − f(x_{k})∣ ≤ ϵ $$ 
+Stopping criteria: True if $∣|∇(f(x_k)|| ≤ ϵ$ 
   
 
-```{r grad_descent}
+```{r grad_descent_backtracking_constant_step}
 # Gradient descent algorithm that uses backtracking to minimize an objective function
 
-gradient_descent_backtracking_constant_step <- function(tol = 1e-6, max_iter = 10000, step_size = 1, epsilon = 0.5, tau = 0.8) {
+gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_size = 0.01) {
+  # Step 1: Initialize and select a random stopping point
   # Initialize
-  iter <- 1
-  step_size <- step_size
-  max_iter <- max_iter
-  tol <- tol
-  epsilon <- epsilon
-  tau <- tau
+  set.seed(777) # example seeding 
+  last_iter <- 0 # the last iteration ran
+  eta <- step_size # step size that is decided manually 
+  max_iter <- max_iter # max iterations before terminating if mininum isn't found
+  tolerance <- tol # tolerance for the stoppign criteria 
+  obj_values <- numeric(max_iter) # Stores the value of f(x)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  betas <- numeric(max_iter) # Stores the value of x guesses
+  x0 <- runif(1, min=-10, max=10) # our first guess is somewhere between -10-10
   
   # Set the objective function to the function to be minimized 
   # Objective function: f(x)
   obj_function <- function(x) {
-    x^4 + 2*(x^2) + 1 
+    return(x^4 + 2*(x^2) + 1) 
   }
   
-  # Gradient function
+  # Gradient function: d/dx of f(x)
   gradient <- function(x) {
-    4*x^3 + 4*x
+    return(4*x^3 + 4*x)
   }
   
-  for (iter in 1:max_iter) {
+  # Append the first guess to the obj_values and betas vector
+  betas[1] <- x0
+  obj_values[1] <- obj_function(x0)
+  
+  # Step 2: While stopping criteria < tolerance, do:
+  for (iter in 1:max_iter) { # the iteration goes n = 1, 2, 3, 4, but the arrays of our output starts at iter = 0 and guess x0
+    # Select eta(step size), which is constant
+    # There's nothing to do for this step
     
+    # Calculate the next guess of x_k+1, calculate f(x_k+1), set eta(x_k+1)
+    betas[iter + 1] <- betas[iter] - (eta * gradient(betas[iter]))
+    obj_values[iter + 1] <- obj_function(betas[iter + 1])
+    eta_values[iter + 1] <- eta
+    
+    # Calculate the value of the stopping criterion
+    stop_criteria <- abs(gradient(betas[iter + 1]))
+    
+    # If stopping criteria less than tolerance, break
+    if(is.na(stop_criteria) || stop_criteria <= tolerance) { 
+      last_iter <- iter + 1
+      break 
+    }
+    
+    # if we never set last iter, then we hit the max number of iterations and need to set
+    if(last_iter == 0) { last_iter <- max_iter }
+    
+    # end algorithm
   }
   
-  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values))
+  return(list(betas = betas, obj_values = obj_values, eta_values = eta_values, last_iter = last_iter)) # in this case, beta(predictors) are the x values, obj_values are f(x), eta is the step size, last iter is the value in the vector of the final iteration before stopping
 }
 ```
 
+Running the gradient descent algorithm with fixed step size:
+
+```{r minimizing_pt_1}
+minimize <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.01)
+print(minimize)
+
+cat("The functions stopped after", minimize$last_iter - 1, "iterations \n")
+cat("The function's point of minimization is", "(", minimize$betas[minimize$last_iter], "," , minimize$obj_values[minimize$last_iter], ") \n")
+```
+
+Backtracking Line Search is implemented as follows:
 
 ### 1) For the constant step size version of gradient descent, discuss how you selected the step size used in your code
 
 Theoretical Analysis proves that for functions with a unique global minimum, the step size should be within 0 to 1/L to converge to the unique global minimum
 
 
-### 2)
+### 2) For both versions of the gradient descent algorithm, plot the value of $f(x_k)$ as a function of k the number of iterations
 
-### 3) 
+### 3) or the the gradient descent method with backtracking line search, plot the step size $η_k$ selected at step k as a function of k. Comment on the result
 

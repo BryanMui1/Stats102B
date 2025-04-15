@@ -91,6 +91,7 @@ gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_si
   tolerance <- tol # tolerance for the stoppign criteria 
   obj_values <- numeric(max_iter) # Stores the value of f(x)
   eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  eta_values[1] <- step_size
   betas <- numeric(max_iter) # Stores the value of x guesses
   x0 <- runif(1, min=-10, max=10) # our first guess is somewhere between -10-10
   
@@ -141,7 +142,7 @@ gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_si
 Running the gradient descent algorithm with fixed step size:
 
 ```{r minimizing_constant_step}
-minimize_constant_step <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.01)
+minimize_constant_step <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.03)
 print(minimize_constant_step)
 
 cat("The functions stopped after", minimize_constant_step$last_iter - 1, "iterations \n")
@@ -196,6 +197,7 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
   tau <- tau # tau used in the step size criteria calculation
   obj_values <- numeric(max_iter) # Stores the value of f(x)
   eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  eta_values[1] <- init_step_size
   betas <- numeric(max_iter) # Stores the value of x guesses
   x0 <- runif(1, min=-10, max=10) # our first guess is somewhere between -10 to 10
   eta <- init_step_size # our initial step size
@@ -261,8 +263,8 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
 
 Running the gradient descent algorithm with backtracking:
 
-```{r minimizing_constant_step}
-minimize_backtrack <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 0.01)
+```{r minimizing_backtracking}
+minimize_backtrack <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 0.02)
 print(minimize_backtrack)
 
 cat("The functions stopped after", minimize_backtrack$last_iter - 1, "iterations \n")
@@ -272,10 +274,11 @@ cat("The function's point of minimization is", "(", minimize_backtrack$betas[min
 ### 1) For the constant step size version of gradient descent, discuss how you selected the step size used in your code
 
 Theoretical Analysis proves that for functions with a unique global minimum, the step size should be within 0 to 1/L to converge to the unique global minimum, where L is the Lipchitz constant, given by:  
+
 $$
 ||∇f(x) - ∇f(y)||_2 \le L||x - y||_2
 $$
-
+Since this cannot be calculated in practice, usually a small step size of 0.01 is what to begin with. From there, manually fine tuning to try 0.02 and 0.03 is a good idea to see if there's any better iterations. Starting from a big step size is usually unsafe do the algorithm overshooting and diverging instead of converging. Ultimately, the step size of 0.02 seemed best to reduce the number of iterations.
 
 ### 2) For both versions of the gradient descent algorithm, plot the value of $f(x_k)$ as a function of k the number of iterations
 
@@ -285,8 +288,39 @@ iterations <- 1:minimize_constant_step$last_iter
 obj_values <- (minimize_constant_step$obj_values)[iterations]
 f_k_constant <- cbind(obj_values, iterations)
 
+iterations <- 1:minimize_backtrack$last_iter
+obj_values <- (minimize_backtrack$obj_values)[iterations]
+f_k_backtrack <- cbind(obj_values, iterations)
+
+ggplot(f_k_constant, aes(x=iterations, y=obj_values)) + 
+  geom_point() + 
+  geom_line() + 
+  ggtitle("Gradient Descent Convergence, Constant Step Size") + 
+  xlab("Iteration") + ylab("Objective Function Value")
+ggplot(f_k_backtrack, aes(x=iterations, y=obj_values)) + 
+  geom_point() + 
+  geom_line() + 
+  ggtitle("Gradient Descent Convergence, Backtracking Line Search") + 
+  xlab("Iteration") + ylab("Objective Function Value")
 ```
 
 
-### 3) or the the gradient descent method with backtracking line search, plot the step size $η_k$ selected at step k as a function of k. Comment on the result
+### 3) For the the gradient descent method with backtracking line search, plot the step size $η_k$ selected at step k as a function of k. Comment on the result
+
+```{r}
+iterations <- 1:minimize_backtrack$last_iter
+eta_values <- minimize_backtrack$eta_values[iterations]
+eta_backtrack <- cbind(eta_values, iterations)
+
+ggplot(eta_backtrack, aes(x=iterations, y=eta_values)) + 
+  geom_point() + 
+  geom_line() + 
+  ggtitle("Gradient Descent Eta Values, BLS") + 
+  xlab("Iteration") + ylab("Eta Value")
+```
+
+We can see that the step size was initially 0.02, but at the very first few iterations the Armijo condition immediately reduced the step size to a very small number < 0.005 in order to prevent overshooting. This condition held for the rest of the iterations until the algorithm converged eventually, after around 443 iterations. Compared to the constant step size gradient descent, the step size was much smaller for all the iterations, meaning that it converged with > 300 more iterations than the constant step size gradient descent. Although using a large step size like 0.02 would be much faster, it seems like the step sizes were chosen to be a safer bound so that the algorithm would not overshoot
+
+# Problem 2
+
 

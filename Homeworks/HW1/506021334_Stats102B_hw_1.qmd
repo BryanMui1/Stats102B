@@ -14,6 +14,7 @@ format:
 ```{r options}
 #| include: false
 options(max.print = 50)
+library(ggplot2)
 ```
 
 
@@ -140,11 +141,11 @@ gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_si
 Running the gradient descent algorithm with fixed step size:
 
 ```{r minimizing_constant_step}
-minimize <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.01)
-print(minimize)
+minimize_constant_step <- gradient_descent_constant_step(tol = 1e-6, max_iter = 10000, step_size = 0.01)
+print(minimize_constant_step)
 
-cat("The functions stopped after", minimize$last_iter - 1, "iterations \n")
-cat("The function's point of minimization is", "(", minimize$betas[minimize$last_iter], "," , minimize$obj_values[minimize$last_iter], ") \n")
+cat("The functions stopped after", minimize_constant_step$last_iter - 1, "iterations \n")
+cat("The function's point of minimization is", "(", minimize_constant_step$betas[minimize_constant_step$last_iter], "," , minimize_constant_step$obj_values[minimize_constant_step$last_iter], ") \n")
 ```
 
 **Backtracking Line Search is implemented as follows:**  
@@ -261,19 +262,31 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
 Running the gradient descent algorithm with backtracking:
 
 ```{r minimizing_constant_step}
-minimize <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 0.01)
-print(minimize)
+minimize_backtrack <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 0.01)
+print(minimize_backtrack)
 
-cat("The functions stopped after", minimize$last_iter - 1, "iterations \n")
-cat("The function's point of minimization is", "(", minimize$betas[minimize$last_iter], "," , minimize$obj_values[minimize$last_iter], ") \n")
+cat("The functions stopped after", minimize_backtrack$last_iter - 1, "iterations \n")
+cat("The function's point of minimization is", "(", minimize_backtrack$betas[minimize_backtrack$last_iter], "," , minimize_backtrack$obj_values[minimize_backtrack$last_iter], ") \n")
 ```
 
 ### 1) For the constant step size version of gradient descent, discuss how you selected the step size used in your code
 
-Theoretical Analysis proves that for functions with a unique global minimum, the step size should be within 0 to 1/L to converge to the unique global minimum
+Theoretical Analysis proves that for functions with a unique global minimum, the step size should be within 0 to 1/L to converge to the unique global minimum, where L is the Lipchitz constant, given by:  
+$$
+||∇f(x) - ∇f(y)||_2 \le L||x - y||_2
+$$
 
 
 ### 2) For both versions of the gradient descent algorithm, plot the value of $f(x_k)$ as a function of k the number of iterations
+
+```{r}
+# constant step size
+iterations <- 1:minimize_constant_step$last_iter
+obj_values <- (minimize_constant_step$obj_values)[iterations]
+f_k_constant <- cbind(obj_values, iterations)
+
+```
+
 
 ### 3) or the the gradient descent method with backtracking line search, plot the step size $η_k$ selected at step k as a function of k. Comment on the result
 

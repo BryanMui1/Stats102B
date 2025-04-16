@@ -11,10 +11,12 @@ format:
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
+Loaded packages: ggplot2, tidyverse (include = false for this chunk)
 ```{r options}
 #| include: false
 options(max.print = 50)
 library(ggplot2)
+library(tidyverse)
 ```
 
 
@@ -323,8 +325,8 @@ eta_values <- minimize_backtrack$eta_values[iterations]
 eta_backtrack <- cbind(eta_values, iterations)
 
 ggplot(eta_backtrack, aes(x=iterations, y=eta_values)) + 
-  geom_point() + 
-  geom_line() + 
+  geom_point(color = "blue") + 
+  geom_line(color = "blue") + 
   ggtitle("Gradient Descent Eta Values, BLS") + 
   xlab("Iteration") + ylab("Eta Value")
 ```
@@ -337,17 +339,138 @@ We can see that the step size was initially 0.02, but at the very first few iter
 
 They contain 100 observations for a response $y$ and 20 predictors $x_j, j = 1, · · · , 20$
 
-## Part (a) 
+## Part a 
 
 Using the gradient descent code provided (both in R and Python) obtain the estimates of the regression coefficient, using both a constant step size and backtracking line search.
 
+Read in the data and the gradient descent function:
+
+```{r}
+dataset1 <- read_csv("dataset1.csv")
+dataset2 <- read_csv("dataset2.csv")
+
+# gradient descent given in class
+gradient_descent_class <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+  
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    
+    if (backtracking) {
+      if (iter == 1) eta_bt <- 1  # Reset only in the first iteration
+      beta_new <- beta - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      beta_new <- beta - eta * grad
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values))
+}
+```
+
+
 ```{r regression_constant_step}
+#| fig-width: 10
+X_dataset_1 <- dataset1 %>%
+  select(-Y) %>%
+  as.matrix()
+y_dataset_1 <- dataset1 %>%
+  select(Y) %>%
+  as.matrix()
+X_dataset_2 <- dataset2 %>%
+  select(-Y) %>%
+  as.matrix()
+y_dataset_2 <- dataset2 %>%
+  select(Y) %>%
+  as.matrix()
+
+reg_const_dataset_1 <- gradient_descent_class(X_dataset_1, y_dataset_1, backtracking = FALSE, eta = 0.01)
+reg_const_dataset_2 <- gradient_descent_class(X_dataset_2, y_dataset_2, backtracking = FALSE, eta = 0.01)
+
 
 ```
 
 
 ```{r regression_bls}
+#| fig-width: 10
+reg_bls_data1 <- gradient_descent_class(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8)
+reg_bls_data2 <- gradient_descent_class(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8)
+
 
 ```
 
 
+### 1) Discuss how you selected the constant step size. Also, discuss which convergence criterion you used and the tolerance parameter used 
+
+```{r}
+
+```
+
+
+### 2) Compare the results with those obtained from the lm command in R or from the class LinearRegression from the sklearn.linear model in Python. 
+
+Specifically, calculate $∥ \hat{β_{GD}} − \hatβ∥_2$, where $\hat{β_{GD}}$ is the estimate of the regression coefficient obtained from the gradient descent algorithm (both with constant step size and backtracking line search) and $\hatβ$ obtained from the least squares solution implemented in R or Python
+
+```{r}
+
+```
+
+
+### 3) Plot the value of the objective function as a function of the number of iterations required
+
+```{r 2-a-3}
+#| fig-width: 10
+par(mfrow=c(2,2))
+
+plot(reg_const_dataset_1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Gradient Descent Convergence, Const Step, dataset1")
+plot(reg_const_dataset_2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Gradient Descent Convergence, Const Step, dataset2")
+plot(reg_bls_data1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Gradient Descent Convergence, BLS, dataset1")
+plot(reg_bls_data2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value, dataset2",
+     main = "Gradient Descent Convergence, BLS, dataset2")
+```
+## Part b
+
+**Implement the Polyak and Nesterov momentum methods and obtain the estimates of the regression coefficients, using both a constant step size and backtracking line search**

@@ -186,7 +186,7 @@ $$
 To summarize, backtracking line search chooses the step size by ensuring the Armijo condition always holds. If the Armijo condition doesn't hold, we are probably overshooting, hence the step size gets updated iteratively 
 
 ```{r backtracking_line_search_grad_descent}
-gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5, init_step_size = 0.01) {
+gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5, init_step_size = 1) {
   # Step 1: Initialize and select a random stopping point
   # Initialize
   set.seed(777) # example seeding 
@@ -215,11 +215,20 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
   
   # Armijo condition function
   # returns TRUE or FALSE whether the condition is satisfied or not
-  calc_armijo_stepsize <- function(beta_new, beta, eta) {
-    iter <- 1 # set a hard limit of 10000 iterations
-    while (obj_function(beta_new) > (obj_function(beta) - (epsilon * eta * gradient(beta)^2)) && iter <= max_iter) {
+  armijo_stepsize <- function(beta, eta, grad, f, epsilon, tau, max_iter) {
+    subiter <- 1 # set a hard limit of iterations
+    # calc armijo
+    beta_new <- beta - (eta)*grad(beta)
+    armijo <- f(beta_new) > (f(beta) - epsilon*eta*sum(grad(beta)^2))
+    while (armijo && (iter <= max_iter)) {
+      #update eta
       eta <- tau * eta
-      iter <- iter + 1
+      
+      #recalculate armijo
+      beta_new <- beta - (eta)*grad(beta)
+      armijo <- f(beta_new) > (f(beta) - epsilon*eta*sum(grad(beta)^2))
+      
+      subiter <- subiter + 1
     }
     return(eta)
   }
@@ -230,17 +239,18 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
   
   # Step 2: While stopping criteria < tolerance, do:
   for (iter in 1:max_iter) { # the iteration goes n = 1, 2, 3, 4, but the arrays of our output starts at iter = 0 and guess x0
-    
-    # Calculate the next guess of x_k+1, calculate f(x_k+1)
     beta <- betas[iter]
-    beta_new <- betas[iter] - (eta * gradient(beta))
-    betas[iter + 1] <- beta_new
-    new_obj <- obj_function(beta_new)
-    obj_values[iter + 1] <- new_obj
     
-    # Select eta(step size) for next step(k+1) using backtracking line search
-    eta <- calc_armijo_stepsize(beta_new = beta_new, beta = beta, eta = eta)
+    # use BLS to calculate eta
+    eta <- armijo_stepsize(beta = beta, eta = eta, grad = gradient, f = obj_function, epsilon = epsilon, tau = tau, max_iter = max_iter)
     eta_values[iter + 1] <- eta
+    
+    # Calculate the next guess of x_k+1
+    beta_new <- beta - (eta * gradient(beta))
+    betas[iter + 1] <- beta_new
+    
+    # calculate f(x_k+1), to keep track obj values
+    obj_values[iter + 1] <- obj_function(beta_new)
     
     # Calculate the value of the stopping criterion
     stop_criteria <- abs(gradient(beta_new))
@@ -264,7 +274,7 @@ gradient_descent_backtracking <- function(tol = 1e-6, max_iter = 10000, epsilon 
 Running the gradient descent algorithm with backtracking:
 
 ```{r minimizing_backtracking}
-minimize_backtrack <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 0.02)
+minimize_backtrack <- gradient_descent_backtracking(tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8, init_step_size = 1)
 print(minimize_backtrack)
 
 cat("The functions stopped after", minimize_backtrack$last_iter - 1, "iterations \n")

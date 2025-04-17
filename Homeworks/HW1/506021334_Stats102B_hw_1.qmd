@@ -420,35 +420,75 @@ y_dataset_2 <- dataset2 %>%
   select(Y) %>%
   as.matrix()
 
-reg_const_dataset_1 <- gradient_descent_class(X_dataset_1, y_dataset_1, backtracking = FALSE, eta = 0.01)
-reg_const_dataset_2 <- gradient_descent_class(X_dataset_2, y_dataset_2, backtracking = FALSE, eta = 0.01)
+reg_const_dataset_1 <- gradient_descent_class(X_dataset_1, y_dataset_1, backtracking = FALSE, eta = 5)
 
+cat("Constant Step Size: dataset1 \n")
+print("Beta Values:")
+print(reg_const_dataset_1$beta)
+print("Obj Function Values:")
+print(reg_const_dataset_1$obj_values)
+print("Eta Values:")
+print(reg_const_dataset_1$eta_values)
+cat("The functions stopped after", max(which(!is.na(reg_const_dataset_1$eta_values))), "iterations \n \n")
 
+reg_const_dataset_2 <- gradient_descent_class(X_dataset_2, y_dataset_2, backtracking = FALSE, eta = 0.02)
+
+cat("Constant Step Size: dataset2 \n")
+print("Beta Values:")
+print(reg_const_dataset_2$beta)
+print("Obj Function Values:")
+print(reg_const_dataset_2$obj_values)
+print("Eta Values:")
+print(reg_const_dataset_2$eta_values)
+cat("The functions stopped after", max(which(!is.na(reg_const_dataset_2$eta_values))), "iterations \n \n")
 ```
 
 
 ```{r regression_bls}
 #| fig-width: 10
 reg_bls_data1 <- gradient_descent_class(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8)
-reg_bls_data2 <- gradient_descent_class(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8)
 
+cat("BLS: dataset1 \n")
+print("Beta Values:")
+print(reg_bls_data1$beta)
+print("Obj Function Values:")
+print(reg_bls_data1$obj_values)
+print("Eta Values:")
+print(reg_bls_data1$eta_values)
+cat("The functions stopped after", max(which(!is.na(reg_bls_data1$eta_values))), "iterations \n \n")
+
+reg_bls_data2 <- gradient_descent_class(X_dataset_2, y_dataset_2, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking = TRUE, epsilon = 0.5, tau = 0.8)
+
+cat("BLS: dataset2 \n")
+print("Beta Values:")
+print(reg_bls_data2$beta)
+print("Obj Function Values:")
+print(reg_bls_data2$obj_values)
+print("Eta Values:")
+print(reg_bls_data2$eta_values)
+cat("The functions stopped after", max(which(!is.na(reg_bls_data2$eta_values))), "iterations \n \n")
 
 ```
 
 
 ### 1) Discuss how you selected the constant step size. Also, discuss which convergence criterion you used and the tolerance parameter used 
 
-```{r}
-
-```
-
+Because we cannot find the Lipchitz constant, constant step size is tuned manually. For data set 1, the step size initially was set small = 0.01, but it did not converge, so I increased the step size manually until it converged at step size = 1. From there, I pushed the step size until the function would not converge anymore. The max step size I could use without 5. For data set 2, I started with 0.01 step size, and eventually a step size of 0.02 was chosen in order to make the algorithm converge in 8159 iterations. For the tolerance parameter, a tolerance of $1e^-6$ was used, which is a standard tolerance parameter and is very close approximation to the real solution. For the convergence criterion, the stop criteria given in the code was to terminate when the difference of beta between iterations is less than the tolerance, indicating that the function has converged. 
 
 ### 2) Compare the results with those obtained from the lm command in R or from the class LinearRegression from the sklearn.linear model in Python. 
 
 Specifically, calculate $∥ \hat{β_{GD}} − \hatβ∥_2$, where $\hat{β_{GD}}$ is the estimate of the regression coefficient obtained from the gradient descent algorithm (both with constant step size and backtracking line search) and $\hatβ$ obtained from the least squares solution implemented in R or Python
 
-```{r}
+Use R's regression class:
 
+```{r}
+m1 <- lm(data = dataset1, Y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + 
+           X11 + X12 + X13 + X14 + X15 + X16 + X17 + X18 + X19 + X20)
+summary(m1)
+
+m2 <- lm(data = dataset2, Y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + 
+           X11 + X12 + X13 + X14 + X15 + X16 + X17 + X18 + X19 + X20)
+summary(m2)
 ```
 
 

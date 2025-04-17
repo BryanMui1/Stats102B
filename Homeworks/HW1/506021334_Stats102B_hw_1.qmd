@@ -81,7 +81,7 @@ Stopping criteria: Stop if $∣|∇(f(x_k)||_2 ≤ ϵ$
   
 
 ```{r grad_descent_constant_step}
-# Gradient descent algorithm that uses backtracking to minimize an objective function
+# Gradient descent algorithm that uses constant step to minimize an objective function
 
 gradient_descent_constant_step <- function(tol = 1e-6, max_iter = 10000, step_size = 0.01) {
   # Step 1: Initialize and select a random stopping point
@@ -567,4 +567,476 @@ plot(reg_bls_data2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
 
 **Implement the Polyak and Nesterov momentum methods and obtain the estimates of the regression coefficients, using both a constant step size and backtracking line search**
 
+Polyak momentum with constant step size:
 
+```{r polyak-constant}
+# polyak momentum constant step
+polyak_constant_step <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  backtracking <- FALSE
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+
+
+  
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    beta_values[[iter]] <- beta
+    
+    if (backtracking) {
+      if (iter == 1) eta_bt <- 1  # Reset only in the first iteration
+      beta_new <- beta - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      if(iter == 1) {
+        y_k <- beta
+      } else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta * grad
+      beta_values[[iter+1]] <- beta_new
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+
+polyak_reg_constant_1 <- polyak_constant_step(X_dataset_1, y_dataset_1, eta = 5, tol = 1e-6, max_iter = 10000, xi = 0.5)
+
+cat("Polyak Constant Step Size: dataset1 \n")
+print("Beta Values:")
+print(polyak_reg_constant_1$beta)
+print("Obj Function Values:")
+print(polyak_reg_constant_1$obj_values)
+print("Eta Values:")
+print(polyak_reg_constant_1$eta_values)
+cat("The functions stopped after", max(which(!is.na(polyak_reg_constant_1$eta_values))), "iterations \n \n")
+
+polyak_reg_constant_2 <- polyak_constant_step(X_dataset_2, y_dataset_2, eta = 0.02, tol = 1e-6, max_iter = 10000, xi = 0.5)
+
+cat("Polyak Constant Step Size: dataset2 \n")
+print("Beta Values:")
+print(polyak_reg_constant_2$beta)
+print("Obj Function Values:")
+print(polyak_reg_constant_2$obj_values)
+print("Eta Values:")
+print(polyak_reg_constant_2$eta_values)
+cat("The functions stopped after", max(which(!is.na(polyak_reg_constant_2$eta_values))), "iterations \n \n")
+```
+
+Nesterov Constant Step:
+
+```{r nesterov-constant}
+# nesterov momentum constant step
+nesterov_constant_step <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  backtracking <- FALSE
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+
+
+  
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    beta_values[[iter]] <- beta
+    
+    if (backtracking) {
+      if (iter == 1) eta_bt <- 1  # Reset only in the first iteration
+      beta_new <- beta - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      if(iter == 1) {
+        y_k <- beta
+      } else {
+        beta_prev <- beta_values[[iter - 1]]
+        xi <- (iter - 1) / (iter + 2)
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta * grad
+      beta_values[[iter+1]] <- beta_new
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+
+nesterov_reg_constant_1 <- nesterov_constant_step(X_dataset_1, y_dataset_1, eta = 5, tol = 1e-6, max_iter = 100000)
+
+cat("Nesterov Constant Step Size: dataset1 \n")
+print("Beta Values:")
+print(nesterov_reg_constant_1$beta)
+print("Obj Function Values:")
+print(nesterov_reg_constant_1$obj_values)
+print("Eta Values:")
+print(nesterov_reg_constant_1$eta_values)
+cat("The functions stopped after", max(which(!is.na(nesterov_reg_constant_1$eta_values))), "iterations \n \n")
+
+nesterov_reg_constant_2 <- nesterov_constant_step(X_dataset_2, y_dataset_2, eta = 0.01, tol = 1e-6, max_iter = 100000)
+
+cat("Nesterov Constant Step Size: dataset2 \n")
+print("Beta Values:")
+print(nesterov_reg_constant_2$beta)
+print("Obj Function Values:")
+print(nesterov_reg_constant_2$obj_values)
+print("Eta Values:")
+print(nesterov_reg_constant_2$eta_values)
+cat("The functions stopped after", max(which(!is.na(nesterov_reg_constant_2$eta_values))), "iterations \n \n")
+```
+
+BLS with Polyak:
+
+```{r polyak-bls}
+# polyak momentum constant step
+polyak_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, epsilon = 0.5, tau = 0.5, backtracking=TRUE) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+
+
+  
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    beta_values[[iter]] <- beta
+    
+    if (backtracking) {
+      if (iter == 1) {
+        eta_bt <- 1 # Reset only in the first iteration
+        y_k <- beta
+      }
+      else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      if(iter == 1) {
+        y_k <- beta
+      } else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta * grad
+      beta_values[[iter+1]] <- beta_new
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+
+polyak_bls_1 <- polyak_bls(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, backtracking=TRUE, epsilon = 0.5, tau = 0.5)
+
+cat("Polyak BLS Step Size: dataset1 \n")
+print("Beta Values:")
+print(polyak_bls_1$beta)
+print("Obj Function Values:")
+print(polyak_bls_1$obj_values)
+print("Eta Values:")
+print(polyak_bls_1$eta_values)
+cat("The functions stopped after", max(which(!is.na(polyak_bls_1 $eta_values))), "iterations \n \n")
+
+polyak_bls_2 <- polyak_bls(X_dataset_2, y_dataset_2, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, backtracking=TRUE, epsilon = 0.5, tau = 0.5)
+
+cat("Polyak BLS Step Size: dataset2 \n")
+print("Beta Values:")
+print(polyak_bls_2$beta)
+print("Obj Function Values:")
+print(polyak_bls_2$obj_values)
+print("Eta Values:")
+print(polyak_bls_2$eta_values)
+cat("The functions stopped after", max(which(!is.na(polyak_bls_2$eta_values))), "iterations \n \n")
+```
+
+
+BLS with Nesterov:
+
+```{r nesterov-bls}
+# nesterov momentum constant step
+nesterov_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5, backtracking=TRUE) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+
+
+  
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    beta_values[[iter]] <- beta
+    
+    if (backtracking) {
+      if (iter == 1) {
+        eta_bt <- 1 # Reset only in the first iteration
+        y_k <- beta
+      }
+      else {
+        beta_prev <- beta_values[[iter - 1]]
+        xi <- (iter - 1) / (iter + 2)
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      if(iter == 1) {
+        y_k <- beta
+      } else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta * grad
+      beta_values[[iter+1]] <- beta_new
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+
+nesterov_bls_1 <- nesterov_bls(X_dataset_1, y_dataset_1, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking=TRUE, epsilon = 0.5, tau = 0.5)
+
+cat("Nesterov BLS Step Size: dataset1 \n")
+print("Beta Values:")
+print(nesterov_bls_1$beta)
+print("Obj Function Values:")
+print(nesterov_bls_1$obj_values)
+print("Eta Values:")
+print(nesterov_bls_1$eta_values)
+cat("The functions stopped after", max(which(!is.na(nesterov_bls_1 $eta_values))), "iterations \n \n")
+
+nesterov_bls_2 <- nesterov_bls(X_dataset_2, y_dataset_2, eta = NULL, tol = 1e-6, max_iter = 10000, backtracking=TRUE, epsilon = 0.5, tau = 0.5)
+
+cat("Nesterov BLS Step Size: dataset2 \n")
+print("Beta Values:")
+print(nesterov_bls_2$beta)
+print("Obj Function Values:")
+print(nesterov_bls_2$obj_values)
+print("Eta Values:")
+print(nesterov_bls_2$eta_values)
+cat("The functions stopped after", max(which(!is.na(nesterov_bls_2$eta_values))), "iterations \n \n")
+```
+
+### 1) Compare again the estimates obtained from the two momentum methods with the least-squares solution by calculating ∥ˆβGD − ˆβ∥2
+
+Calculate the difference of Betas:
+
+```{r}
+# transform dataset 1 coefs
+beta_gd_d1_p_const <- as.vector(polyak_reg_constant_1$beta)
+p1 <- data.frame(Coef_data1_polyak_constant = names, Beta_GD = beta_gd_d1_p_const, Beta = lm_1)
+
+beta_gd_d1_n_const <- as.vector(nesterov_reg_constant_1$beta)
+n1 <- data.frame(Coef_data1_nesterov_constant = names, Beta_GD = beta_gd_d1_n_const, Beta = lm_1)
+
+# transform dataset 2 coefs
+beta_gd_d2_p_const <- as.vector(polyak_reg_constant_2$beta)
+p2 <- data.frame(Coef_data2_polyak_constant = names, Beta_GD = beta_gd_d2_p_const, Beta = lm_2)
+
+beta_gd_d2_n_const <- as.vector(nesterov_reg_constant_2$beta)
+n2 <- data.frame(Coef_data1_nesterov_constant = names, Beta_GD = beta_gd_d2_n_const, Beta = lm_2)
+
+# show the difference between Beta_GD and Beta
+p1 <- p1 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
+
+p2 <- p2 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
+
+n1 <- n1 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
+
+n2 <- n2 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
+
+
+print(p1)
+print(p2)
+
+print(n1)
+print(n2)
+
+```
+
+Calculating the norms:
+
+```{r}
+p1_norm <- sqrt(sum(p1$`Beta_GD - Beta`^2))
+p2_norm <- sqrt(sum(p2$`Beta_GD - Beta`^2))
+n1_norm <- sqrt(sum(n1$`Beta_GD - Beta`^2))
+n2_norm <- sqrt(sum(n2$`Beta_GD - Beta`^2))
+cat("Dataset 1 Normm Polyak:", p1_norm, "\n")
+cat("Dataset 2 Norm Polyak:", p2_norm, "\n")
+cat("Dataset 1 Norm Nesterov:", n1_norm, "\n")
+cat("Dataset 2 Norm Nesterov:", n2_norm, "\n")
+```
+
+
+### 2) Plot the value of the objective function as a function of the number of iterations required, and comment whether the momentum methods reduce the number of iterations requires to obtain the regression coeffcients (using the same tolerance)
+
+```{r plots-2-b-2}
+#| fig-width: 10
+plot(polyak_reg_constant_1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Polyak Const Step, dataset1")
+plot(polyak_reg_constant_2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Polyak Const Step, dataset2")
+plot(polyak_bls_1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Polyak BLS, dataset1")
+plot(polyak_bls_2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Polyak BLS, dataset2")
+plot(nesterov_reg_constant_1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Nesterov Const Step, dataset1")
+plot(nesterov_reg_constant_2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Nesterov Const Step, dataset2")
+plot(nesterov_bls_1$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Nesterov BLS, dataset1")
+plot(nesterov_bls_2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
+     xlab = "Iteration", ylab = "Objective Function Value",
+     main = "Nesterov BLS, dataset2")
+```
+
+We can see for Polyak and Nesterov, both of the BLS methods did not necessarily converge slower. This was likely because we were able to manually select a more agressive step size that what is calculated with BLS, or in other case BLS chose a better step size with the momentum shift. We see that Nesterov took way more iterations with constant step than polyak constant step. We see that Nesterov BLS is much better than Nesterov at a constant step size. Finally, we see that Polyak BLS took more iterations, likely because the step size was safer tha with constant step.
+
+### 3) Comment on the results; namely, the difference in the accuracy of the solution and the standard gradient descent algorithm
+a
+Looking at the accuacy of the solution, we see that the accuracy norms for the standard gradient descent is 0.195615 and 0.06. For polyak we got .195615 and 0.05539779, and for Nesterov we got .1956129 and 0.05456602. This might indicate that the norms are very close together, and since we used the same tolerance we expect all gradient descent algorithms to be within that solerance. Therefore the algorithms converged to the same answer.

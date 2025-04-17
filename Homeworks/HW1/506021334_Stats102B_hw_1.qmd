@@ -491,6 +491,48 @@ m2 <- lm(data = dataset2, Y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 +
 summary(m2)
 ```
 
+Plotting a table comparing $\beta$ to $\beta_{GD}$: 
+
+```{r}
+# transform dataset 1 coefs
+beta_gd_d1 <- reg_const_dataset_1$beta
+beta_1 <- m1$coefficients
+
+names <- attributes(beta_gd_d1)$dimnames[[1]]
+b_gd_1 <- as.vector(beta_gd_d1)
+lm_1 <- as.vector(beta_1[-1])
+
+d1 <- data.frame(Coef = names, Beta_GD = b_gd_1, Beta = lm_1)
+
+# transform dataset 2 coefs
+beta_gd_d2 <- reg_const_dataset_2$beta
+beta_2 <- m2$coefficients
+
+names <- attributes(beta_gd_d2)$dimnames[[1]]
+b_gd_2 <- as.vector(beta_gd_d2)
+lm_2 <- as.vector(beta_2[-1])
+
+d2 <- data.frame(Coef = names, Beta_GD = b_gd_2, Beta = lm_2)
+
+
+
+```
+
+
+Calculating the norm of difference in Betas:
+
+The formula is given as:
+
+$$
+||\hat{\beta}_{GD} - \hat\beta||_2 = \sqrt{ \sum_{i=1}^{20} (\hat{\beta}_{GD, i} - \hat\beta_i)^2}
+$$
+
+```{r}
+
+```
+
+
+
 
 ### 3) Plot the value of the objective function as a function of the number of iterations required
 

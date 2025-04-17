@@ -493,7 +493,7 @@ summary(m2)
 
 Plotting a table comparing $\beta$ to $\beta_{GD}$: 
 
-```{r}
+```{r calc-beta-diff}
 # transform dataset 1 coefs
 beta_gd_d1 <- reg_const_dataset_1$beta
 beta_1 <- m1$coefficients
@@ -514,8 +514,16 @@ lm_2 <- as.vector(beta_2[-1])
 
 d2 <- data.frame(Coef = names, Beta_GD = b_gd_2, Beta = lm_2)
 
+# show the difference between Beta_GD and Beta
+d1 <- d1 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
 
+d2 <- d2 %>%
+  mutate(`Beta_GD - Beta` = Beta_GD - Beta)
 
+print(d1)
+
+print(d2)
 ```
 
 
@@ -526,12 +534,14 @@ The formula is given as:
 $$
 ||\hat{\beta}_{GD} - \hat\beta||_2 = \sqrt{ \sum_{i=1}^{20} (\hat{\beta}_{GD, i} - \hat\beta_i)^2}
 $$
+Calculating the norm of the beta difference: 
 
-```{r}
-
+```{r calc-norm}
+d1_norm <- sqrt(sum(d1$`Beta_GD - Beta`^2))
+d2_norm <- sqrt(sum(d2$`Beta_GD - Beta`^2))
+cat("Dataset 1 Norm:", d1_norm, "\n")
+cat("Dataset 2 Norm:", d2_norm, "\n")
 ```
-
-
 
 
 ### 3) Plot the value of the objective function as a function of the number of iterations required
@@ -556,3 +566,5 @@ plot(reg_bls_data2$obj_values, type = "o", col = "blue", pch = 16, cex = 0.5,
 ## Part b
 
 **Implement the Polyak and Nesterov momentum methods and obtain the estimates of the regression coefficients, using both a constant step size and backtracking line search**
+
+

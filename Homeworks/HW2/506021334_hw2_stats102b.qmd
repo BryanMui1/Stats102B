@@ -11,15 +11,155 @@ format:
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
+Loaded packages: ggplot2, tidyverse (include = false for this chunk)
+```{r options}
+#| include: false
+library(tidyverse)
+```
+
+Reading the dataset:
+```{r read}
+data <- read_csv("dataset-logistic-regression.csv")
+head(data, n = 25)
+```
+
+Our data set has 10000 observations, 1 binary outcome variable y, and 100 predictor variables X1-X100
+
+Separating into X matrix and y vector:
+
+```{r}
+X <- data %>%
+  select(-y)
+y <- data %>%
+  select(y)
+```
+
+
 # Problem 1
 
 ## Part ($\symbf{\alpha}$)
 
-Implement the following algorithms to obtain estimates of the regression coefficients $β$:
+The optimization problem is to minimize the log-likelihood function. From there we will get the objective function and gradient function
+
+From the slides in class we have:
+
+$$
+f_i(\beta) = -y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))
+$$
+As the objective function.
+
+We also have the gradient function:
+
+$$
+\nabla f(x) = \frac{1}{m} \sum_{m=1}^m \nabla f_i(x)
+$$
+Therefore our gradient descent update step is:
+
+$$
+x_{k+1} = x_k - \frac{\eta_k}{m}(\sum_{m=1}^{m}\nabla f_i(x))
+$$
+
+**Implement the following algorithms to obtain estimates of the regression coefficients $\symbf{β}$:**
 
 ### (1) Gradient descent with backtracking line search
 
+Algorithm; Backtracking Line Search:  
+
+  * Set $η^0 > 0$(usually a large value = 1), $ϵ ∈ (0,1)$ and $τ ∈ (0,1)$
+  * Set $η_1 = η^0$ 
+  * At iteration k, set $η_k <- η_{k-1}$
+    1. Check whether the Armijo Condition holds: 
+    $$
+    h(η_k) ≤ h(0) + ϵη_kh'(0)
+    $$  
+      where $h(η_k) = f(x_k) − η_k ∇f(x_k)$
+      
+    2. 
+      + If yes(condition holds), terminate and keep $η_k$
+      + If no, set $η_k = τη_k$ and go to Step 1
+
+Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ ϵ$ (change in parameters is small)
+
+```{r grad-bls}
+# logistic gradient descent w/ bls
+log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, epsilon = 0.5, tau = 0.5, backtracking=TRUE) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: negative log-likelihood
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n)
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+
+
+  # Algorithm:
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    beta_values[[iter]] <- beta
+    
+    if (backtracking) {
+      if (iter == 1) {
+        eta_bt <- 1 # Reset only in the first iteration
+        y_k <- beta
+      }
+      else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta_bt * grad
+      
+      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+        eta_bt <- tau * eta_bt
+        beta_new <- beta - eta_bt * grad
+      }
+      eta_used <- eta_bt
+    } else {
+      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
+      if(iter == 1) {
+        y_k <- beta
+      } else {
+        beta_prev <- beta_values[[iter - 1]]
+        y_k <- beta + xi * (beta - beta_prev)
+      }
+      beta_new <- y_k - eta * grad
+      beta_values[[iter+1]] <- beta_new
+      eta_used <- eta
+    }
+    
+    eta_values[iter] <- eta_used
+    
+    obj_values[iter] <- obj_function(beta_new)
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+```
+
+
+
 ### (2) Gradient descent with backtracking line search and Nesterov momentum
+
+Nesterov is simply BLS with a special way to select the momentum $\epsilon$
+
 
 ### (3) Gradient descent with AMSGrad-ADAM momentum
 

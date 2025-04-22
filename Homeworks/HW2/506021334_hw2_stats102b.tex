@@ -66,6 +66,46 @@
 \fi
 \makeatother
 
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{241,243,245}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.40,0.45,0.13}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\ExtensionTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.28,0.35,0.67}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.46,0.62}{#1}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.07,0.07,0.07}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
 
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
@@ -93,6 +133,7 @@
 \makeatother
 
 \usepackage{fvextra}
+\usepackage{unicode-math}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 \KOMAoption{captions}{tableheading}
@@ -164,22 +205,240 @@
 \maketitle
 
 
+Loaded packages: ggplot2, tidyverse (include = false for this chunk)
+
+Reading the dataset:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\StringTok{"dataset{-}logistic{-}regression.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Rows: 10000 Columns: 101
+-- Column specification --------------------------------------------------------
+Delimiter: ","
+dbl (101): y, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X...
+
+i Use `spec()` to retrieve the full column specification for this data.
+i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(data, }\AttributeTok{n =} \DecValTok{25}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 25 x 101
+       y      X1      X2     X3     X4     X5     X6      X7     X8      X9
+   <dbl>   <dbl>   <dbl>  <dbl>  <dbl>  <dbl>  <dbl>   <dbl>  <dbl>   <dbl>
+ 1     1 -0.0895  0.450   1.71   0.657 -0.392  1.24   0.895   1.13  -0.0117
+ 2     1 -0.0943  0.281  -0.147 -0.701  0.400 -0.210  0.677  -0.440  0.458 
+ 3     0 -0.431  -0.445  -0.777 -0.832 -2.26  -1.62  -1.98   -1.67  -1.15  
+ 4     0  0.644   0.0817 -0.448  0.852 -1.02   0.671  0.299   0.145 -0.205 
+ 5     1 -0.919  -0.0241  0.807 -0.612 -0.498  0.350  1.12    0.242 -0.947 
+ 6     0 -1.89   -1.11   -0.210  0.161 -1.34  -2.04  -0.0135 -1.39  -1.31  
+ 7     0 -1.34   -0.804   0.322 -0.110  0.624 -0.329 -0.432  -0.191  0.171 
+ 8     1  0.329   0.468   0.719  0.588  1.71   1.39   0.603   0.650  0.161 
+ 9     0  0.332   1.42   -0.431  1.02   0.484  0.348  0.474   1.26  -0.479 
+10     0 -0.311   0.0193  0.168 -0.346  0.626 -0.704 -0.290   0.680 -0.0453
+# i 15 more rows
+# i 91 more variables: X10 <dbl>, X11 <dbl>, X12 <dbl>, X13 <dbl>, X14 <dbl>,
+#   X15 <dbl>, X16 <dbl>, X17 <dbl>, X18 <dbl>, X19 <dbl>, X20 <dbl>,
+#   X21 <dbl>, X22 <dbl>, X23 <dbl>, X24 <dbl>, X25 <dbl>, X26 <dbl>,
+#   X27 <dbl>, X28 <dbl>, X29 <dbl>, X30 <dbl>, X31 <dbl>, X32 <dbl>,
+#   X33 <dbl>, X34 <dbl>, X35 <dbl>, X36 <dbl>, X37 <dbl>, X38 <dbl>,
+#   X39 <dbl>, X40 <dbl>, X41 <dbl>, X42 <dbl>, X43 <dbl>, X44 <dbl>, ...
+\end{verbatim}
+
+Our data set has 10000 observations, 1 binary outcome variable y, and
+100 predictor variables X1-X100
+
+Separating into X matrix and y vector:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{X }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{y)}
+\NormalTok{y }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(y)}
+\end{Highlighting}
+\end{Shaded}
+
 \section{Problem 1}\label{problem-1}
 
 \subsection{\texorpdfstring{Part
 (\(\symbf{\alpha}\))}{Part (\textbackslash symbf\{\textbackslash alpha\})}}\label{part-symbfalpha}
 
-The optimization problem is
+The optimization problem is to minimize the log-likelihood function.
+From there we will get the objective function and gradient function
+
+From the slides in class we have:
+
+\[
+\min_{\beta} (-\ell(\beta)) = \frac{1}{m} \sum_{i=1}^{m} f_i(\beta)
+\]
+
+and the equation for \(f_i(\beta)\):
+
+\[
+f_i(\beta) = -y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))
+\] For the objective function, we get:
+
+\[
+\boxed{f(\beta) = \frac{1}{m} \sum_{i=1}^{m} [-y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))]}
+\]
+
+We also have the gradient function:
+
+\[
+\nabla f(x) = \frac{1}{m} \sum_{i=1}^m \nabla f_i(x)
+\]
+
+and
+
+\[
+\nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i
+\] where \(\sigma(z) = \frac{1}{1+exp(-z)}\) as the logistic sigmoid
+function, therefore:
+
+\[
+\begin{aligned}
+\nabla f(x) &= \frac{1}{m} \sum_{i=1}^m \nabla f_i(x), \; \nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i \\
+\nabla f(\beta) &= \boxed{{\frac{1}{m} \sum_{i=1}^m [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i}}
+\end{aligned}
+\]
+
+Therefore our gradient descent update step is:
+
+\[
+\boxed {\beta_{k+1} = \beta_k - \eta \nabla f(\beta_k)}
+\]
 
 \textbf{Implement the following algorithms to obtain estimates of the
-regression coefficients \(β\):}
+regression coefficients \(\symbf{β}\):}
 
 \subsubsection{(1) Gradient descent with backtracking line
 search}\label{gradient-descent-with-backtracking-line-search}
 
+Algorithm; Backtracking Line Search:
+
+Params:
+
+\begin{itemize}
+\tightlist
+\item
+  Set \(η^0 > 0\)(usually a large value \textasciitilde1),
+\item
+  Set \(η_1 = η^0\)
+\item
+  Set \(ϵ ∈ (0,1), τ ∈ (0,1)\), where \(ϵ\) and \(τ\) are used to modify
+  step size
+\end{itemize}
+
+Repeat:
+
+\begin{itemize}
+\tightlist
+\item
+  At iteration k, set \(η_k <- η_{k-1}\)
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \item
+    Check whether the Armijo Condition holds: \[
+    h(η_k) ≤ h(0) + ϵη_kh'(0)
+    \]\\
+    where \(h(η_k) = f(x_k) − η_k ∇f(x_k)\),\\
+    and \(h(0) = f(x_k)\),\\
+    and \(h'(0) = -||\nabla (x_k)||^2\)
+  \item
+  \end{enumerate}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    If yes(condition holds), terminate and keep \(η_k\)
+  \item
+    If no, set \(η_k = τη_k\) and go to Step 1
+  \end{itemize}
+\end{itemize}
+
+Stopping criteria: Stop if \(||x_k - x_{k+1}|| ≤ tol\) (change in
+parameters is small)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# logistic gradient descent w/ bls}
+\NormalTok{log\_bls }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{eta =} \ConstantTok{NULL}\NormalTok{, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{xi =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{tau =} \FloatTok{0.5}\NormalTok{) \{}
+  \CommentTok{\# Initialize}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p)}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }\CommentTok{\# To store beta values used each iteration}
+\NormalTok{  eta\_bt }\OtherTok{\textless{}{-}} \DecValTok{1}  \CommentTok{\# Initial step size for backtracking}
+  
+  \CommentTok{\# Objective function: negative log{-}likelihood}
+\NormalTok{  obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta) \{}
+    \CommentTok{\#sum((X \%*\% beta {-} y)\^{}2) / (2 * n)}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta) \{}
+    \CommentTok{\#t(X) \%*\% (X \%*\% beta {-} y) / n}
+\NormalTok{  \}}
+
+  \CommentTok{\# Algorithm:}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+\NormalTok{    grad }\OtherTok{\textless{}{-}} \FunctionTok{gradient}\NormalTok{(beta)}
+\NormalTok{    beta\_values[[iter]] }\OtherTok{\textless{}{-}}\NormalTok{ beta}
+    
+    \CommentTok{\# backtracking step}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) \{}
+\NormalTok{      eta\_bt }\OtherTok{\textless{}{-}} \DecValTok{1} \CommentTok{\# Reset only in the first iteration}
+\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta}
+\NormalTok{    \}}
+    \ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{      beta\_prev }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[[iter }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{]]}
+\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{+}\NormalTok{ xi }\SpecialCharTok{*}\NormalTok{ (beta }\SpecialCharTok{{-}}\NormalTok{ beta\_prev)}
+\NormalTok{    \}}
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ y\_k }\SpecialCharTok{{-}}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad}
+    
+    \ControlFlowTok{while}\NormalTok{ (}\FunctionTok{obj\_function}\NormalTok{(beta\_new) }\SpecialCharTok{\textgreater{}} \FunctionTok{obj\_function}\NormalTok{(beta) }\SpecialCharTok{{-}}\NormalTok{ epsilon }\SpecialCharTok{*}\NormalTok{ eta\_bt }\SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(grad}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) \{}
+\NormalTok{      eta\_bt }\OtherTok{\textless{}{-}}\NormalTok{ tau }\SpecialCharTok{*}\NormalTok{ eta\_bt}
+\NormalTok{      beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad}
+\NormalTok{    \}}
+\NormalTok{    eta\_used }\OtherTok{\textless{}{-}}\NormalTok{ eta\_bt}
+    
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta\_used}
+    
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta\_new)}
+    
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}
+\NormalTok{      obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      eta\_values }\OtherTok{\textless{}{-}}\NormalTok{ eta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
 \subsubsection{(2) Gradient descent with backtracking line search and
 Nesterov
 momentum}\label{gradient-descent-with-backtracking-line-search-and-nesterov-momentum}
+
+Nesterov is simply BLS with a special way to select the momentum
+\(\epsilon\)
 
 \subsubsection{(3) Gradient descent with AMSGrad-ADAM
 momentum}\label{gradient-descent-with-amsgrad-adam-momentum}

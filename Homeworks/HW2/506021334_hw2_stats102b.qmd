@@ -3,10 +3,12 @@ title: "HW 2"
 author: "Bryan Mui - UID 506021334 - 28 April 2025"
 format: 
   pdf:
+    latex-engine: pdflatex
     keep-tex: true
     include-in-header: 
        text: |
          \usepackage{fvextra}
+         \usepackage{unicode-math}
          \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
@@ -44,19 +46,44 @@ The optimization problem is to minimize the log-likelihood function. From there 
 From the slides in class we have:
 
 $$
+\min_{\beta} (-\ell(\beta)) = \frac{1}{m} \sum_{i=1}^{m} f_i(\beta)
+$$
+
+and the equation for $f_i(\beta)$:
+
+$$
 f_i(\beta) = -y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))
 $$
-As the objective function.
+For the objective function, we get:
+
+$$
+\boxed{f(\beta) = \frac{1}{m} \sum_{i=1}^{m} [-y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))]}
+$$
 
 We also have the gradient function:
 
 $$
-\nabla f(x) = \frac{1}{m} \sum_{m=1}^m \nabla f_i(x)
+\nabla f(x) = \frac{1}{m} \sum_{i=1}^m \nabla f_i(x)
 $$
+
+and
+
+$$
+\nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i
+$$
+where $\sigma(z) = \frac{1}{1+exp(-z)}$ as the logistic sigmoid function, therefore:
+
+$$
+\begin{aligned}
+\nabla f(x) &= \frac{1}{m} \sum_{i=1}^m \nabla f_i(x), \; \nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i \\
+\nabla f(\beta) &= \boxed{{\frac{1}{m} \sum_{i=1}^m [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i}}
+\end{aligned}
+$$
+
 Therefore our gradient descent update step is:
 
 $$
-x_{k+1} = x_k - \frac{\eta_k}{m}(\sum_{m=1}^{m}\nabla f_i(x))
+\boxed {\beta_{k+1} = \beta_k - \eta \nabla f(\beta_k)}
 $$
 
 **Implement the following algorithms to obtain estimates of the regression coefficients $\symbf{β}$:**
@@ -65,24 +92,32 @@ $$
 
 Algorithm; Backtracking Line Search:  
 
-  * Set $η^0 > 0$(usually a large value = 1), $ϵ ∈ (0,1)$ and $τ ∈ (0,1)$
+Params:
+
+  * Set $η^0 > 0$(usually a large value ~1), 
   * Set $η_1 = η^0$ 
+  * Set $ϵ ∈ (0,1), τ ∈ (0,1)$, where $ϵ$ and $τ$ are used to modify step size
+  
+Repeat:
+
   * At iteration k, set $η_k <- η_{k-1}$
     1. Check whether the Armijo Condition holds: 
     $$
     h(η_k) ≤ h(0) + ϵη_kh'(0)
     $$  
-      where $h(η_k) = f(x_k) − η_k ∇f(x_k)$
+      where $h(η_k) = f(x_k) − η_k ∇f(x_k)$,  
+      and $h(0) = f(x_k)$,  
+      and $h'(0) = -||\nabla (x_k)||^2$  
       
     2. 
       + If yes(condition holds), terminate and keep $η_k$
       + If no, set $η_k = τη_k$ and go to Step 1
 
-Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ ϵ$ (change in parameters is small)
+Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ tol$ (change in parameters is small)
 
 ```{r grad-bls}
 # logistic gradient descent w/ bls
-log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, epsilon = 0.5, tau = 0.5, backtracking=TRUE) {
+log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, epsilon = 0.5, tau = 0.5) {
   # Initialize
   n <- nrow(X)
   p <- ncol(X)
@@ -94,48 +129,35 @@ log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, ep
   
   # Objective function: negative log-likelihood
   obj_function <- function(beta) {
-    sum((X %*% beta - y)^2) / (2 * n)
+    #sum((X %*% beta - y)^2) / (2 * n)
   }
   
   # Gradient function
   gradient <- function(beta) {
-    t(X) %*% (X %*% beta - y) / n
+    #t(X) %*% (X %*% beta - y) / n
   }
-
 
   # Algorithm:
   for (iter in 1:max_iter) {
     grad <- gradient(beta)
     beta_values[[iter]] <- beta
     
-    if (backtracking) {
-      if (iter == 1) {
-        eta_bt <- 1 # Reset only in the first iteration
-        y_k <- beta
-      }
-      else {
-        beta_prev <- beta_values[[iter - 1]]
-        y_k <- beta + xi * (beta - beta_prev)
-      }
-      beta_new <- y_k - eta_bt * grad
-      
-      while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
-        eta_bt <- tau * eta_bt
-        beta_new <- beta - eta_bt * grad
-      }
-      eta_used <- eta_bt
-    } else {
-      if (is.null(eta)) stop("When backtracking is FALSE, a fixed eta must be provided.")
-      if(iter == 1) {
-        y_k <- beta
-      } else {
-        beta_prev <- beta_values[[iter - 1]]
-        y_k <- beta + xi * (beta - beta_prev)
-      }
-      beta_new <- y_k - eta * grad
-      beta_values[[iter+1]] <- beta_new
-      eta_used <- eta
+    # backtracking step
+    if (iter == 1) {
+      eta_bt <- 1 # Reset only in the first iteration
+      y_k <- beta
     }
+    else {
+      beta_prev <- beta_values[[iter - 1]]
+      y_k <- beta + xi * (beta - beta_prev)
+    }
+    beta_new <- y_k - eta_bt * grad
+    
+    while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+      eta_bt <- tau * eta_bt
+      beta_new <- beta - eta_bt * grad
+    }
+    eta_used <- eta_bt
     
     eta_values[iter] <- eta_used
     

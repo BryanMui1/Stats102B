@@ -129,7 +129,7 @@ Repeat:
 Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ tol$ (change in parameters is small)
 
 **Implement BLS**
-```{r grad-bls}
+```{r}
 # logistic gradient descent w/ bls
 log_bls <- function(X, y, tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5) {
   # Initialize
@@ -202,7 +202,7 @@ log_bls <- function(X, y, tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5
 ```
 
 **TESTING: BLS**
-```{r testing-bls}
+```{r}
 log_reg_bls <- log_bls(X, y, tol=1e-6, max_iter=10000, epsilon=0.5, tau=0.5)
 ```
 
@@ -261,16 +261,506 @@ $$
 Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ tol$ (change in parameters is small)
 
 
+**Implement BLS Nesterov**
+```{r}
+# logistic gradient descent w/ bls nesterov
+log_bls_n <- function(X, y, tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.8) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  x <- as.matrix(X)
+  y <- as.matrix(y)
+  beta <- as.matrix(rep(0, p))
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: negative log-likelihood
+  # input: Beta vector, x matrix, y matrix
+  # output: scalar objective func value
+  # comments: We want to minimize this function for logit regression
+  obj_function <- function(beta, x, y) {
+    m <- nrow(x)
+    z <- x %*% beta
+    (1 / m) * (-(t(y) %*% z) + sum(log(1 + exp(z))))
+  }
+  
+  # Gradient function
+  # input: Beta vector, x matrix, y matrix
+  # output: gradient vector in the dimension of nrow(Beta) x 1
+  # comments: We use this for gradient descent
+  gradient <- function(beta, x, y) {
+    m <- nrow(x)                       # define m
+    sig <- function(z) 1 / (1 + exp(-z))  # sigmoid function
+    (1 / m) * (t(x) %*% (sig(x %*% beta) - y))
+  }
+
+  # Algorithm:
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta, x, y)
+    
+    #cat("iter ", iter, "\n")
+    
+    # backtracking step
+    current_obj <- obj_function(beta, x, y)
+    grad_norm_sq <- sum(grad^2)
+    
+    if(iter == 1) {
+      eta_bt <- 1
+      y_k <- beta
+    } else {
+      beta_prev <- beta_values[[iter - 1]]
+      xi <- (iter + 1) / (iter + 2)
+      y_k <- beta + xi * ((beta - beta_prev))
+    }
+
+    beta_new <- y_k - eta_bt * grad
+    
+    while (obj_function(beta_new, x, y) > current_obj - epsilon * eta_bt * grad_norm_sq) {
+      eta_bt <- tau * eta_bt
+      beta_new <- beta - eta_bt * grad
+    }
+    
+    # save values to the matrix
+    eta_values[iter] <- eta_bt
+    obj_values[iter] <- obj_function(beta_new, x, y)
+    beta_values[[iter]] <- beta_new
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      # set the vector ranges and break
+      beta <- beta_new
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      beta_values <- beta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+```
+
+**TESTING: BLS**
+```{r}
+log_reg_bls_n <- log_bls_n(X, y, tol=1e-6, max_iter=10000, epsilon=0.5, tau=0.8)
+```
+**PRINTING OUTPUT**
+```{r}
+cat("betas \n")
+print(log_reg_bls_n$beta)
+cat("The function converged after", length(log_reg_bls_n$obj_values), " iterations \n")
+cat("Eta Vals: \n")
+print(log_reg_bls_n$eta_values[1:50])
+cat("Objective Function vals \n")
+print(log_reg_bls_n$obj_values[1:50])
+```
+
 ### (3) Gradient descent with AMSGrad-ADAM momentum
 
 (no backtracking line search, since AMSGrad-ADAM adjusts step sizes per parameter using momentum and adaptive scaling)
 
+AMSGrad-ADAM is a special way to adjust the step size intelligently:
+
+$$
+\begin{aligned}
+m_k &= \beta_1m_{k-1} + (1-\beta_1)G_k, \quad m_0 = 0, \quad G_k = \nabla f(x_k), \quad \beta_1∈(0, \beta_2)\\
+z_k &= \beta_2 z_{k-1} + (1-\beta_2)(G_k \odot G_k), \quad \beta_2∈(0, 1), \quad z_0=0\\
+\hat{m}_k &= \frac{m_k}{1 - \beta_1^k} \quad(\text{exponentate at ktth iteration})\\
+\hat{z}_k &= \max(\hat{z}_{k-1}, z_k), \quad \hat{z}_0 = 0 \\
+\tilde{z}_k(i) &= \frac{1}{\sqrt{\hat{z}_k(i)} + \epsilon}\\ 
+\mathbf{x_{k+1}} &= \boxed{x_k - \eta(\tilde{z}_k \odot \hat{m}_k), \quad \eta > 0}
+\end{aligned}
+$$
+
+**Implement AMSGRAD-ADAM**
+```{r}
+# logistic gradient descent AMSGRAD-ADAM
+log_adam <- function(X, y, tol = 1e-6, max_iter = 10000, eta = 1, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  x <- as.matrix(X)
+  y <- as.matrix(y)
+  beta <- as.matrix(rep(0, p))
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  eta_bt <- 1  # Initial step size for backtracking
+  
+  # Objective function: negative log-likelihood
+  # input: Beta vector, x matrix, y matrix
+  # output: scalar objective func value
+  # comments: We want to minimize this function for logit regression
+  obj_function <- function(beta, x, y) {
+    m <- nrow(x)
+    z <- x %*% beta
+    (1 / m) * (-(t(y) %*% z) + sum(log(1 + exp(z))))
+  }
+  
+  # Gradient function
+  # input: Beta vector, x matrix, y matrix
+  # output: gradient vector in the dimension of nrow(Beta) x 1
+  # comments: We use this for gradient descent
+  gradient <- function(beta, x, y) {
+    m <- nrow(x)                       # define m
+    sig <- function(z) 1 / (1 + exp(-z))  # sigmoid function
+    (1 / m) * (t(x) %*% (sig(x %*% beta) - y))
+  }
+
+  # Algorithm:
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta, x, y)
+    
+    #cat("iter ", iter, "\n")
+    
+    # ADAM step
+    if (iter == 1) {
+      m_k <- (1 - b_1) * grad
+      z_k <- (1 - b_2) * grad^2
+      m_hat_k <- m_k / (1 - b_1^iter)
+      z_hat_k <- pmax(0, z_k)
+      z_tild_k <- 1 / (sqrt(z_hat_k) + epsilon)
+    } else {
+      m_k <- b_1 * m_k_prev + (1 - b_1) * grad
+      z_k <- b_2 * z_k_prev + (1 - b_2) * grad^2
+      m_hat_k <- m_k / (1 - b_1^iter)
+      z_hat_k <- pmax(z_hat_k_prev, z_k)
+      z_tild_k <- 1 / (sqrt(z_hat_k) + epsilon)
+    }
+    
+    beta_new <- beta - eta * (z_tild_k * m_hat_k)
+
+
+    # current_obj <- obj_function(beta, x, y)
+    # grad_norm_sq <- sum(grad^2)
+    # 
+    # if(iter == 1) {
+    #   eta_bt <- 1
+    #   y_k <- beta
+    # } else {
+    #   beta_prev <- beta_values[[iter - 1]]
+    #   xi <- (iter + 1) / (iter + 2)
+    #   y_k <- beta + xi * (beta - beta_prev)
+    # }
+    # 
+    # beta_new <- y_k - eta_bt * grad
+    # 
+    # while (obj_function(beta_new, x, y) > current_obj - epsilon * eta_bt * grad_norm_sq) {
+    #   eta_bt <- tau * eta_bt
+    #   beta_new <- beta - eta_bt * grad
+    # }
+    
+    # save values to the matrix
+    eta_values[iter] <- eta_bt
+    obj_values[iter] <- obj_function(beta_new, x, y)
+    beta_values[[iter]] <- beta_new
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      # set the vector ranges and break
+      beta <- beta_new
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      beta_values <- beta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+    z_k_prev <- z_k
+    m_k_prev <- m_k
+    z_hat_k_prev <- z_hat_k
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+```
+
+**TESTING: AMSGRAD-ADAM**
+```{r testing-bls}
+log_reg_adam <- log_adam(X, y, tol = 1e-6, max_iter = 10000, eta = 0.1, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999)
+```
+
+**PRINTING OUTPUT**
+```{r}
+cat("betas \n")
+print(log_reg_adam$beta)
+cat("The function converged after", length(log_reg_adam$obj_values), " iterations \n")
+cat("Eta Vals: \n")
+print(log_reg_adam$eta_values[1:50])
+cat("Objective Function vals \n")
+print(log_reg_adam$obj_values[1:50])
+```
+
 ### (4) Stochastic gradient descent with a fixed schedule of decreasing step sizes
+
+Stochastic gradient descent happens is an implementation of gradient descent that adds randomness by calculating a gradient as a subset of the data points in order to try to get the algorithm to converge
+
+Algorithm (SGD)
+
+1. Select the cardinality s of index set $I_k$
+2. Select $x_0∈\mathbb{R}^n$
+3. While stopping criterion > tol, do:
+  + $x_{k+1} = x_k - \eta_{k}\nabla f_{I_k}(x_k)$
+  + Calculate the value of the stopping criterion
+  
+Note that:
+
+$$
+f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]} = \frac{1}{s} \sum_{i∈I_k} \nabla f_i(x_k)
+$$
+
+**Implement SGD**
+```{r}
+# stochastic gradient descent with fixed schedule of decreasing step size
+log_sgd <- function(X, y, tol = 1e-6, max_iter = 10000, s = 32, eta = 1) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  x <- as.matrix(X)
+  y <- as.matrix(y)
+  beta <- as.matrix(rep(0, p))
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  
+  # Objective function: negative log-likelihood
+  # input: Beta vector, x matrix, y matrix
+  # output: scalar objective func value
+  # comments: We want to minimize this function for logit regression
+  obj_function <- function(beta, x, y) {
+    m <- nrow(x)
+    z <- x %*% beta
+    (1 / m) * (-(t(y) %*% z) + sum(log(1 + exp(z))))
+  }
+  
+  obj_sum <- function(beta, x, y, subset) {
+    x_sub <- x[subset, , drop = FALSE]   # subset of x
+    y_sub <- y[subset, , drop = FALSE]   # subset of y
+    obj_function(beta, x_sub, y_sub)
+  }
+  
+  # Gradient function
+  # input: Beta vector, x matrix, y matrix
+  # output: gradient vector in the dimension of nrow(Beta) x 1
+  # comments: We use this for gradient descent
+  gradient <- function(beta, x, y) {
+    m <- nrow(x)                       # define m
+    sig <- function(z){ 
+      z <- pmin(z, 20)  # Clip high values
+      z <- pmax(z, -20) # Clip l
+      1 / (1 + exp(-z))  # sigmoid function
+    }
+    (1 / m) * (t(x) %*% (sig(x %*% beta) - y))
+  }
+  
+  grad_sum <- function(beta, x, y, subset) {
+    x_sub <- x[subset, , drop = FALSE]   # subset of x
+    y_sub <- y[subset, , drop = FALSE]   # subset of y
+    gradient(beta, x_sub, y_sub)
+  }
+
+  # Algorithm:
+  for (iter in 1:max_iter) {
+
+    eta_k = eta / (1 + 0.001 * iter)
+    
+    # subset of data
+    subset <- sample(1:n, s, replace=FALSE)
+    obj_sub <- obj_sum(beta, x, y, subset)
+    grad_sub <- grad_sum(beta, x, y, subset)
+    
+    beta_new <- beta - eta_k * grad_sub
+    
+    # save values to the matrix
+    eta_values[iter] <- eta_k
+    obj_values[iter] <- obj_sub
+    beta_values[[iter]] <- beta_new
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      # set the vector ranges and break
+      beta <- beta_new
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      beta_values <- beta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+    if (iter == 1 || iter %% 1000 == 0) cat("iter", iter, "eta:", eta_k, "obj:", obj_sub, "\n")
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+```
+
+**TESTING: SGD(No ADAM)**
+```{r}
+log_reg_sgd <- log_sgd(X, y, tol = 1e-5, max_iter = 10000, s = 256, eta = 0.001)
+```
+**PRINTING OUTPUT**
+```{r}
+cat("betas \n")
+print(log_reg_sgd$beta)
+cat("The function converged after", length(log_reg_sgd$obj_values), " iterations \n")
+cat("Eta Vals: \n")
+print(log_reg_sgd$eta_values[1:50])
+cat("Objective Function vals \n")
+print(log_reg_sgd$obj_values[1:50])
+```
 
 ### (5) Stochastic gradient descent with AMSGrad-ADAM-W momentum 
 
 (no backtracking line search, since AMSGrad-ADAM adjusts step sizes per parameter using momentum and adaptive scaling)
 
+We can apply the AMSGrad-ADAM update to the stochastic gradient algorithm shown previously, except multiplying (1 − ηλ) to $x_k$: 
+
+**Implement SGD ADAM**
+```{r}
+# stochastic gradient descent with fixed schedule of decreasing step size
+log_sgd_adam <- function(X, y, tol = 1e-6, max_iter = 10000, lambda = 1e-4, s = 32, eta = 1, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999) {
+  # Initialize
+  n <- nrow(X)
+  p <- ncol(X)
+  x <- as.matrix(X)
+  y <- as.matrix(y)
+  beta <- as.matrix(rep(0, p))
+  obj_values <- numeric(max_iter)
+  eta_values <- numeric(max_iter)  # To store eta values used each iteration
+  beta_values <- list() # To store beta values used each iteration
+  
+  # Objective function: negative log-likelihood
+  # input: Beta vector, x matrix, y matrix
+  # output: scalar objective func value
+  # comments: We want to minimize this function for logit regression
+   obj_function <- function(beta, x, y) {
+    m <- nrow(x)
+    z <- x %*% beta
+    (1 / m) * (-(t(y) %*% z) + sum(log(1 + exp(z))))
+  }
+  
+  obj_sum <- function(beta, x, y, subset) {
+    x_sub <- x[subset, , drop = FALSE]   # subset of x
+    y_sub <- y[subset, , drop = FALSE]   # subset of y
+    obj_function(beta, x_sub, y_sub)
+  }
+  
+  # Gradient function
+  # input: Beta vector, x matrix, y matrix
+  # output: gradient vector in the dimension of nrow(Beta) x 1
+  # comments: We use this for gradient descent
+  gradient <- function(beta, x, y) {
+    m <- nrow(x)                       # define m
+    sig <- function(z) 1 / (1 + exp(-z))  # sigmoid function
+    (1 / m) * (t(x) %*% (sig(x %*% beta) - y))
+  }
+  
+  grad_sum <- function(beta, x, y, subset) {
+    x_sub <- x[subset, , drop = FALSE]   # subset of x
+    y_sub <- y[subset, , drop = FALSE]   # subset of y
+    gradient(beta, x_sub, y_sub)
+  }
+
+  # Algorithm:
+  for (iter in 1:max_iter) {
+    
+    # subset of data
+    subset <- sample(1:n, s, replace=FALSE)
+    obj_sub <- obj_sum(beta, x, y, subset)
+    grad_sub <- grad_sum(beta, x, y, subset)
+    
+    # ADAM step
+    if (iter == 1) {
+      m_k <- grad_sub
+      z_k <- grad_sub^2
+      m_hat_k <- m_k / (1 - b_1^iter)
+      z_hat_k <- pmax(0, z_k)
+      z_tild_k <- 1 / (sqrt(z_hat_k) + epsilon)
+    } else {
+      m_k <- b_1 * m_k_prev + (1 - b_1) * grad_sub
+      z_k <- b_2 * z_k_prev + (1 - b_2) * grad_sub^2
+      m_hat_k <- m_k / (1 - b_1^iter)
+      z_hat_k <- pmax(z_hat_k_prev, z_k)
+      z_tild_k <- 1 / (sqrt(z_hat_k) + epsilon)
+    }
+    
+    beta_new <- (1 - eta * lambda) * beta - eta * (z_tild_k * m_hat_k)
+    
+    # save values to the matrix
+    eta_values[iter] <- eta
+    obj_values[iter] <- obj_function(beta_new, x, y)
+    beta_values[[iter]] <- beta_new
+    
+    if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      # set the vector ranges and break
+      beta <- beta_new
+      obj_values <- obj_values[1:iter]
+      eta_values <- eta_values[1:iter]
+      beta_values <- beta_values[1:iter]
+      break
+    }
+    
+    beta <- beta_new
+    z_k_prev <- z_k
+    m_k_prev <- m_k
+    z_hat_k_prev <- z_hat_k
+    if (iter == 1 | iter %% 1000 == 0) cat("iter", iter, "obj:", obj_sub, "\n")
+  }
+  
+  return(list(beta = beta, obj_values = obj_values, eta_values = eta_values, beta_values = beta_values))
+}
+```
+
+**TESTING: SGD ADAM**
+```{r}
+log_reg_sgd_adam <- log_sgd_adam(X, y, tol = 1e-4, max_iter = 10000, lambda = 1e-4, s = 256, eta = 0.01, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999)
+```
+**PRINTING OUTPUT: SGD ADAM**
+```{r}
+cat("betas \n")
+print(log_reg_sgd_adam$beta)
+cat("The function converged after", length(log_reg_sgd_adam$obj_values), " iterations \n")
+cat("Eta Vals: \n")
+print(log_reg_sgd_adam$eta_values[1:50])
+cat("Objective Function vals \n")
+print(log_reg_sgd_adam$obj_values[1:50])
+```
+
 ## Part (a) Hyperparameter Discussion
 
+Discuss how you selected the various hyperparameters for each of the algorithms
+
+For BLS, I selected tau and epsilon = 0.5, because they should be between 0 and 1 and 0.5 is relatively standard in order for it to converge. That is fairly standard for the Armijo condition.
+
+For BLS with Nesterov, I kept the hyperparameters the same as BLS because it was standard from before, and then decided to set tau = 0.8 to keep the step size bigger and with faster convergence. The convergence was the same, likely the momentum not making a huge difference with this particular objective function 
+
+For SGD, The decreasing step size implemented was eta_k = eta / (1 + 0.001 * iter), ensuring that eta decreases with every iteration, as it is also a common algorithm used in literature to decrease eta. The multiplier 0.001 means that eta won't significantly drop after 1000 iterations, otherwise eta would get too small. I also set eta = 0.001 initially, otherwise it would not converge.
+
+For AMSGRAD-ADAM, I selected Beta1 = 0.9 and Beta2 = 0.999, In order that Beta1 and Beta2 to not be to o small, and it is also a common step size eta = 1 that is used in ADAM. The step size allowed it to converge aggressively with few iterations
+
+For AMSGRAD-ADAM-W with SGD, I selected the same coefficients as AMSGRAD, it's just that I selected lambda to be a very small value ~1e-4, I had to keep the step size and tolerance
+
+
 ## Part (b) Metrics
+
+```{r}
+g <- glm(y ~ ., data = data, family = binomial())
+coefs <- g$coefficients[2:101]
+print(sqrt(sum((log_reg_bls$beta - coefs)^2)))
+print(sqrt(sum((log_reg_bls_n$beta - coefs)^2)))
+print(sqrt(sum((log_reg_adam$beta - coefs)^2)))
+print(sqrt(sum((log_reg_sgd$beta - coefs)^2)))
+print(sqrt(sum((log_reg_sgd_adam$beta - coefs)^2)))
+```
+
+
+For the algorithm BLS, BLS_N, ADAM, SGD, SGD_ADAM_W
+
+The estimation errors were:
+
+The iterations took 1909, 1909, 275, 769, and 10000 respectively
+
+Table:
+
+I see that ADAM performed very well in reducing the iterations for converging, and we can see that all the models perform relatively well in terms of estimation error. I would definitely use ADAM if I was going to perform gradient descent in the future. For stochastic gradient descent, it is likely that the tolerance needs to increase, hence the estimation error also needs to increase slightly.

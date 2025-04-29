@@ -727,22 +727,1271 @@ Repeat:
 Stopping criteria: Stop if \(||x_k - x_{k+1}|| ≤ tol\) (change in
 parameters is small)
 
+\textbf{Implement BLS Nesterov}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# logistic gradient descent w/ bls nesterov}
+\NormalTok{log\_bls\_n }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{tau =} \FloatTok{0.5}\NormalTok{) \{}
+  \CommentTok{\# Initialize}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  x }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(X)}
+\NormalTok{  y }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(y)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p))}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }\CommentTok{\# To store beta values used each iteration}
+\NormalTok{  eta\_bt }\OtherTok{\textless{}{-}} \DecValTok{1}  \CommentTok{\# Initial step size for backtracking}
+  
+  \CommentTok{\# Objective function: negative log{-}likelihood}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: scalar objective func value}
+  \CommentTok{\# comments: We want to minimize this function for logit regression}
+\NormalTok{  obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)}
+\NormalTok{    z }\OtherTok{\textless{}{-}}\NormalTok{ x }\SpecialCharTok{\%*\%}\NormalTok{ beta}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\SpecialCharTok{{-}}\NormalTok{(}\FunctionTok{t}\NormalTok{(y) }\SpecialCharTok{\%*\%}\NormalTok{ z) }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(}\FunctionTok{log}\NormalTok{(}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(z))))}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: gradient vector in the dimension of nrow(Beta) x 1}
+  \CommentTok{\# comments: We use this for gradient descent}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)                       }\CommentTok{\# define m}
+\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z) }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\FunctionTok{t}\NormalTok{(x) }\SpecialCharTok{\%*\%}\NormalTok{ (}\FunctionTok{sig}\NormalTok{(x }\SpecialCharTok{\%*\%}\NormalTok{ beta) }\SpecialCharTok{{-}}\NormalTok{ y))}
+\NormalTok{  \}}
+
+  \CommentTok{\# Algorithm:}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+\NormalTok{    grad }\OtherTok{\textless{}{-}} \FunctionTok{gradient}\NormalTok{(beta, x, y)}
+    
+    \CommentTok{\#cat("iter ", iter, "\textbackslash{}n")}
+    
+    \CommentTok{\# backtracking step}
+\NormalTok{    current\_obj }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta, x, y)}
+\NormalTok{    grad\_norm\_sq }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(grad}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+    
+    \ControlFlowTok{if}\NormalTok{(iter }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) \{}
+\NormalTok{      eta\_bt }\OtherTok{\textless{}{-}} \DecValTok{1}
+\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta}
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{      beta\_prev }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[[iter }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{]]}
+\NormalTok{      xi }\OtherTok{\textless{}{-}}\NormalTok{ (iter }\SpecialCharTok{+} \DecValTok{1}\NormalTok{) }\SpecialCharTok{/}\NormalTok{ (iter }\SpecialCharTok{+} \DecValTok{2}\NormalTok{)}
+\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{+}\NormalTok{ xi }\SpecialCharTok{*}\NormalTok{ (beta }\SpecialCharTok{{-}}\NormalTok{ beta\_prev)}
+\NormalTok{    \}}
+
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ y\_k }\SpecialCharTok{{-}}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad}
+    
+    \ControlFlowTok{while}\NormalTok{ (}\FunctionTok{obj\_function}\NormalTok{(beta\_new, x, y) }\SpecialCharTok{\textgreater{}}\NormalTok{ current\_obj }\SpecialCharTok{{-}}\NormalTok{ epsilon }\SpecialCharTok{*}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad\_norm\_sq) \{}
+\NormalTok{      eta\_bt }\OtherTok{\textless{}{-}}\NormalTok{ tau }\SpecialCharTok{*}\NormalTok{ eta\_bt}
+\NormalTok{      beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad}
+\NormalTok{    \}}
+    
+    \CommentTok{\# save values to the matrix}
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta\_bt}
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta\_new, x, y)}
+\NormalTok{    beta\_values[[iter]] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}
+      \CommentTok{\# set the vector ranges and break}
+\NormalTok{      beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{      obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      eta\_values }\OtherTok{\textless{}{-}}\NormalTok{ eta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      beta\_values }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{TESTING: BLS}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{log\_reg\_bls\_n }\OtherTok{\textless{}{-}} \FunctionTok{log\_bls\_n}\NormalTok{(X, y, }\AttributeTok{tol=}\FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter=}\DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon=}\FloatTok{0.5}\NormalTok{, }\AttributeTok{tau=}\FloatTok{0.5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{PRINTING OUTPUT}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"betas }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+betas 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_bls\_n}\SpecialCharTok{$}\NormalTok{beta)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+                 y
+X1   -0.1418188273
+X2   -0.0601340162
+X3    0.1588169528
+X4    0.1328223189
+X5   -0.0480437781
+X6    0.0992481092
+X7    0.1189707785
+X8    0.1165560855
+X9    0.0121222291
+X10   0.0002641372
+X11   0.0440526577
+X12  -0.1793886158
+X13  -0.0107332284
+X14  -0.1230510680
+X15   0.0724799230
+X16   0.0571868940
+X17   0.1299458439
+X18   0.1249113906
+X19  -0.0018170795
+X20   0.1248825007
+X21  -0.0107845610
+X22  -0.1431801553
+X23  -0.1094846603
+X24   0.0576435159
+X25  -0.1190174922
+X26   0.0164879978
+X27  -0.0977482724
+X28   0.1544632196
+X29  -0.0276524076
+X30   0.0164226883
+X31  -0.0589010945
+X32   0.0205242099
+X33   0.1352153619
+X34  -0.0301792708
+X35  -0.0097106467
+X36   0.0631274232
+X37   0.1972595891
+X38   0.0932479560
+X39   0.1242393813
+X40   0.1466042152
+X41   0.1112967707
+X42  -0.1226544766
+X43  -0.0374866338
+X44  -0.0155583465
+X45  -0.0103256878
+X46  -0.1807311531
+X47   0.0122916067
+X48   0.0309436582
+X49   0.0257891274
+X50   0.1230837280
+X51  -0.0237134869
+X52  -0.0136672407
+X53   0.0802510780
+X54   0.1695795679
+X55   0.1711403640
+X56  -0.0447703054
+X57  -0.0407325139
+X58  -0.0768578382
+X59   0.0786448045
+X60  -0.1192193182
+X61  -0.0080431756
+X62   0.0701535429
+X63   0.0295238798
+X64  -0.1090225592
+X65   0.0633967271
+X66  -0.1450871355
+X67   0.1404424947
+X68   0.0649021774
+X69  -0.1595801011
+X70   0.1128079446
+X71   0.1888668197
+X72   0.0920649207
+X73  -0.0647758044
+X74  -0.0684344716
+X75   0.2306707321
+X76  -0.1312078759
+X77   0.0301767178
+X78  -0.0742090881
+X79   0.0695790861
+X80  -0.0273839196
+X81   0.0183730389
+X82   0.0555339156
+X83  -0.0196159895
+X84  -0.0119020076
+X85   0.0981161430
+X86   0.1724354285
+X87   0.0832570899
+X88  -0.0070115810
+X89   0.0720539875
+X90   0.0779093972
+X91   0.0026928031
+X92  -0.1223692130
+X93   0.0073627318
+X94  -0.0996425700
+X95  -0.0485788118
+X96   0.0338587696
+X97   0.1496954257
+X98   0.1702285222
+X99   0.0197714549
+X100  0.0070161693
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"The function converged after"}\NormalTok{, }\FunctionTok{length}\NormalTok{(log\_reg\_bls\_n}\SpecialCharTok{$}\NormalTok{obj\_values), }\StringTok{" iterations }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+The function converged after 1909  iterations 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Eta Vals: }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Eta Vals: 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_bls\_n}\SpecialCharTok{$}\NormalTok{eta\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+[11] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+[21] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+[31] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+[41] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Objective Function vals }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Objective Function vals 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_bls\_n}\SpecialCharTok{$}\NormalTok{obj\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 0.5642463 0.5491551 0.5446388 0.5427888 0.5418291 0.5412092 0.5407301
+ [8] 0.5403132 0.5399257 0.5395537 0.5391908 0.5388343 0.5384829 0.5381361
+[15] 0.5377934 0.5374547 0.5371200 0.5367892 0.5364622 0.5361389 0.5358194
+[22] 0.5355035 0.5351913 0.5348826 0.5345775 0.5342759 0.5339777 0.5336830
+[29] 0.5333916 0.5331036 0.5328188 0.5325373 0.5322591 0.5319840 0.5317120
+[36] 0.5314432 0.5311774 0.5309146 0.5306549 0.5303981 0.5301442 0.5298932
+[43] 0.5296451 0.5293997 0.5291572 0.5289174 0.5286804 0.5284460 0.5282142
+[50] 0.5279851
+\end{verbatim}
+
 \subsubsection{(3) Gradient descent with AMSGrad-ADAM
 momentum}\label{gradient-descent-with-amsgrad-adam-momentum}
 
 (no backtracking line search, since AMSGrad-ADAM adjusts step sizes per
 parameter using momentum and adaptive scaling)
 
+AMSGrad-ADAM is a special way to adjust the step size intelligently:
+
+\[
+\begin{aligned}
+m_k &= \beta_1m_{k-1} + (1-\beta_1)G_k, \quad m_0 = 0, \quad G_k = \nabla f(x_k), \quad \beta_1∈(0, \beta_2)\\
+z_k &= \beta_2 z_{k-1} + (1-\beta_2)(G_k \odot G_k), \quad \beta_2∈(0, 1), \quad z_0=0\\
+\hat{m}_k &= \frac{m_k}{1 - \beta_1^k} \quad(\text{exponentate at ktth iteration})\\
+\hat{z}_k &= \max(\hat{z}_{k-1}, z_k), \quad \hat{z}_0 = 0 \\
+\tilde{z}_k(i) &= \frac{1}{\sqrt{\hat{z}_k(i)} + \epsilon}\\ 
+\mathbf{x_{k+1}} &= \boxed{x_k - \eta(\tilde{z}_k \odot \hat{m}_k), \quad \eta > 0}
+\end{aligned}
+\]
+
+\textbf{Implement AMSGRAD-ADAM}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# logistic gradient descent AMSGRAD{-}ADAM}
+\NormalTok{log\_adam }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{) \{}
+  \CommentTok{\# Initialize}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  x }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(X)}
+\NormalTok{  y }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(y)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p))}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }\CommentTok{\# To store beta values used each iteration}
+\NormalTok{  eta\_bt }\OtherTok{\textless{}{-}} \DecValTok{1}  \CommentTok{\# Initial step size for backtracking}
+  
+  \CommentTok{\# Objective function: negative log{-}likelihood}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: scalar objective func value}
+  \CommentTok{\# comments: We want to minimize this function for logit regression}
+\NormalTok{  obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)}
+\NormalTok{    z }\OtherTok{\textless{}{-}}\NormalTok{ x }\SpecialCharTok{\%*\%}\NormalTok{ beta}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\SpecialCharTok{{-}}\NormalTok{(}\FunctionTok{t}\NormalTok{(y) }\SpecialCharTok{\%*\%}\NormalTok{ z) }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(}\FunctionTok{log}\NormalTok{(}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(z))))}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: gradient vector in the dimension of nrow(Beta) x 1}
+  \CommentTok{\# comments: We use this for gradient descent}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)                       }\CommentTok{\# define m}
+\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z) }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\FunctionTok{t}\NormalTok{(x) }\SpecialCharTok{\%*\%}\NormalTok{ (}\FunctionTok{sig}\NormalTok{(x }\SpecialCharTok{\%*\%}\NormalTok{ beta) }\SpecialCharTok{{-}}\NormalTok{ y))}
+\NormalTok{  \}}
+
+  \CommentTok{\# Algorithm:}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+\NormalTok{    grad }\OtherTok{\textless{}{-}} \FunctionTok{gradient}\NormalTok{(beta, x, y)}
+    
+    \CommentTok{\#cat("iter ", iter, "\textbackslash{}n")}
+    
+    \CommentTok{\# ADAM step}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) \{}
+\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad}
+\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
+\NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_1 }\SpecialCharTok{*}\NormalTok{ m\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad}
+\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_2 }\SpecialCharTok{*}\NormalTok{ z\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(z\_hat\_k\_prev, z\_k)}
+\NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
+\NormalTok{    \}}
+    
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta }\SpecialCharTok{*}\NormalTok{ (z\_tild\_k }\SpecialCharTok{*}\NormalTok{ m\_hat\_k)}
+
+    \CommentTok{\# current\_obj \textless{}{-} obj\_function(beta, x, y)}
+    \CommentTok{\# grad\_norm\_sq \textless{}{-} sum(grad\^{}2)}
+    \CommentTok{\# }
+    \CommentTok{\# if(iter == 1) \{}
+    \CommentTok{\#   eta\_bt \textless{}{-} 1}
+    \CommentTok{\#   y\_k \textless{}{-} beta}
+    \CommentTok{\# \} else \{}
+    \CommentTok{\#   beta\_prev \textless{}{-} beta\_values[[iter {-} 1]]}
+    \CommentTok{\#   xi \textless{}{-} (iter + 1) / (iter + 2)}
+    \CommentTok{\#   y\_k \textless{}{-} beta + xi * (beta {-} beta\_prev)}
+    \CommentTok{\# \}}
+    \CommentTok{\# }
+    \CommentTok{\# beta\_new \textless{}{-} y\_k {-} eta\_bt * grad}
+    \CommentTok{\# }
+    \CommentTok{\# while (obj\_function(beta\_new, x, y) \textgreater{} current\_obj {-} epsilon * eta\_bt * grad\_norm\_sq) \{}
+    \CommentTok{\#   eta\_bt \textless{}{-} tau * eta\_bt}
+    \CommentTok{\#   beta\_new \textless{}{-} beta {-} eta\_bt * grad}
+    \CommentTok{\# \}}
+    
+    \CommentTok{\# save values to the matrix}
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta\_bt}
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta\_new, x, y)}
+\NormalTok{    beta\_values[[iter]] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}
+      \CommentTok{\# set the vector ranges and break}
+\NormalTok{      beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{      obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      eta\_values }\OtherTok{\textless{}{-}}\NormalTok{ eta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      beta\_values }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{    z\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_k}
+\NormalTok{    m\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ m\_k}
+\NormalTok{    z\_hat\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_hat\_k}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{TESTING: AMSGRAD-ADAM}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{log\_reg\_adam }\OtherTok{\textless{}{-}} \FunctionTok{log\_adam}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{eta =} \FloatTok{0.1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{PRINTING OUTPUT}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"betas }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+betas 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_adam}\SpecialCharTok{$}\NormalTok{beta)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+                 y
+X1   -0.1418463622
+X2   -0.0601523924
+X3    0.1588541573
+X4    0.1328428605
+X5   -0.0480703025
+X6    0.0992737155
+X7    0.1190029511
+X8    0.1165767113
+X9    0.0121181465
+X10   0.0002687163
+X11   0.0440520463
+X12  -0.1794462460
+X13  -0.0107345508
+X14  -0.1230689700
+X15   0.0724947456
+X16   0.0572062077
+X17   0.1299656238
+X18   0.1249283104
+X19  -0.0018098372
+X20   0.1249226315
+X21  -0.0107941081
+X22  -0.1432408159
+X23  -0.1095163677
+X24   0.0576437775
+X25  -0.1190444250
+X26   0.0164815558
+X27  -0.0977827701
+X28   0.1544841023
+X29  -0.0276535650
+X30   0.0164057779
+X31  -0.0589244496
+X32   0.0205423298
+X33   0.1352412184
+X34  -0.0302001111
+X35  -0.0097285921
+X36   0.0631465984
+X37   0.1972980191
+X38   0.0932625799
+X39   0.1242670193
+X40   0.1466159862
+X41   0.1113132350
+X42  -0.1226774468
+X43  -0.0375124689
+X44  -0.0155647662
+X45  -0.0103122341
+X46  -0.1807760542
+X47   0.0122965142
+X48   0.0309589790
+X49   0.0257828924
+X50   0.1231055162
+X51  -0.0237032815
+X52  -0.0136671230
+X53   0.0802685889
+X54   0.1696197757
+X55   0.1711787988
+X56  -0.0447899442
+X57  -0.0407526558
+X58  -0.0768861287
+X59   0.0786501603
+X60  -0.1192489709
+X61  -0.0080705701
+X62   0.0701660587
+X63   0.0295336021
+X64  -0.1090461166
+X65   0.0634079799
+X66  -0.1451078658
+X67   0.1404694799
+X68   0.0649117255
+X69  -0.1596152179
+X70   0.1128306371
+X71   0.1889251386
+X72   0.0920819446
+X73  -0.0647859932
+X74  -0.0684622678
+X75   0.2307039691
+X76  -0.1312469777
+X77   0.0301753385
+X78  -0.0742125391
+X79   0.0695862174
+X80  -0.0273963433
+X81   0.0183796051
+X82   0.0555625883
+X83  -0.0196148306
+X84  -0.0119200074
+X85   0.0981226620
+X86   0.1724823303
+X87   0.0832700595
+X88  -0.0070410770
+X89   0.0720618508
+X90   0.0779171504
+X91   0.0026816137
+X92  -0.1224128603
+X93   0.0073612843
+X94  -0.0996681796
+X95  -0.0486043333
+X96   0.0338486816
+X97   0.1497347964
+X98   0.1702659904
+X99   0.0197950906
+X100  0.0070016149
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"The function converged after"}\NormalTok{, }\FunctionTok{length}\NormalTok{(log\_reg\_adam}\SpecialCharTok{$}\NormalTok{obj\_values), }\StringTok{" iterations }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+The function converged after 275  iterations 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Eta Vals: }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Eta Vals: 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_adam}\SpecialCharTok{$}\NormalTok{eta\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[39] 1 1 1 1 1 1 1 1 1 1 1 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Objective Function vals }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Objective Function vals 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_adam}\SpecialCharTok{$}\NormalTok{obj\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1]        Inf        Inf        Inf        Inf 19.8520058 12.9304874
+ [7]  5.8396817  4.3830145  4.7467728  1.7187755  3.3341688  4.2608418
+[13]  4.4904099  4.1356096  3.3187136  2.1972655  1.2498733  3.3696220
+[19]  2.2058144  1.3250353  2.0043160  2.4767619  2.5952903  2.3798886
+[25]  1.8988031  1.3061757  1.2508394  2.1151974  1.1939994  1.1456952
+[31]  1.4557426  1.5921738  1.4919325  1.2018727  0.9106533  1.2013993
+[37]  1.1157532  0.8317901  0.9954680  1.0783952  0.9797300  0.7667368
+[43]  0.7678432  0.8976035  0.6489309  0.7665641  0.7968736  0.6749666
+[49]  0.5739384  0.7735166
+\end{verbatim}
+
 \subsubsection{(4) Stochastic gradient descent with a fixed schedule of
 decreasing step
 sizes}\label{stochastic-gradient-descent-with-a-fixed-schedule-of-decreasing-step-sizes}
 
+Stochastic gradient descent happens is an implementation of gradient
+descent that adds randomness by calculating a gradient as a subset of
+the data points in order to try to get the algorithm to converge
+
+Algorithm (SGD)
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Select the cardinality s of index set \(I_k\)
+\item
+  Select \(x_0∈\mathbb{R}^n\)
+\item
+  While stopping criterion \textgreater{} tol, do:
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \(x_{k+1} = x_k - \eta_{k}\nabla f_{I_k}(x_k)\)
+\item
+  Calculate the value of the stopping criterion
+\end{itemize}
+
+Note that:
+
+\[
+f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]} = \frac{1}{s} \sum_{i∈I_k} \nabla f_i(x_k)
+\]
+
+\textbf{Implement SGD}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# stochastic gradient descent with fixed schedule of decreasing step size}
+\NormalTok{log\_sgd }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{) \{}
+  \CommentTok{\# Initialize}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  x }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(X)}
+\NormalTok{  y }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(y)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p))}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }\CommentTok{\# To store beta values used each iteration}
+  
+  \CommentTok{\# Objective function: negative log{-}likelihood}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: scalar objective func value}
+  \CommentTok{\# comments: We want to minimize this function for logit regression}
+\NormalTok{  obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)}
+\NormalTok{    z }\OtherTok{\textless{}{-}}\NormalTok{ x }\SpecialCharTok{\%*\%}\NormalTok{ beta}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\SpecialCharTok{{-}}\NormalTok{(}\FunctionTok{t}\NormalTok{(y) }\SpecialCharTok{\%*\%}\NormalTok{ z) }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(}\FunctionTok{log}\NormalTok{(}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(z))))}
+\NormalTok{  \}}
+  
+\NormalTok{  obj\_sum }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y, subset) \{}
+\NormalTok{    x\_sub }\OtherTok{\textless{}{-}}\NormalTok{ x[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of x}
+\NormalTok{    y\_sub }\OtherTok{\textless{}{-}}\NormalTok{ y[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of y}
+    \FunctionTok{obj\_function}\NormalTok{(beta, x\_sub, y\_sub)}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: gradient vector in the dimension of nrow(Beta) x 1}
+  \CommentTok{\# comments: We use this for gradient descent}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)                       }\CommentTok{\# define m}
+\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z) }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\FunctionTok{t}\NormalTok{(x) }\SpecialCharTok{\%*\%}\NormalTok{ (}\FunctionTok{sig}\NormalTok{(x }\SpecialCharTok{\%*\%}\NormalTok{ beta) }\SpecialCharTok{{-}}\NormalTok{ y))}
+\NormalTok{  \}}
+  
+\NormalTok{  grad\_sum }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y, subset) \{}
+\NormalTok{    x\_sub }\OtherTok{\textless{}{-}}\NormalTok{ x[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of x}
+\NormalTok{    y\_sub }\OtherTok{\textless{}{-}}\NormalTok{ y[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of y}
+    \FunctionTok{gradient}\NormalTok{(beta, x\_sub, y\_sub)}
+\NormalTok{  \}}
+
+  \CommentTok{\# Algorithm:}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, iter, }\StringTok{"eta:"}\NormalTok{, eta\_k, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+    \ControlFlowTok{if}\NormalTok{(iter }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) \{}
+\NormalTok{      eta\_k }\OtherTok{=}\NormalTok{ eta }\SpecialCharTok{/}\NormalTok{ iter}
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{      eta\_k }\OtherTok{=}\NormalTok{ eta}
+\NormalTok{    \}}
+    
+    \CommentTok{\#cat("iter ", iter, "\textbackslash{}n")}
+    
+    \CommentTok{\# subset of data}
+\NormalTok{    subset }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\NormalTok{n, s, }\AttributeTok{replace=}\ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{    obj\_sub }\OtherTok{\textless{}{-}} \FunctionTok{obj\_sum}\NormalTok{(beta, x, y, subset)}
+\NormalTok{    grad\_sub }\OtherTok{\textless{}{-}} \FunctionTok{grad\_sum}\NormalTok{(beta, x, y, subset)}
+    
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta\_k }\SpecialCharTok{*}\NormalTok{ grad\_sub}
+    
+    \CommentTok{\# save values to the matrix}
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta\_k}
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ obj\_sub}
+\NormalTok{    beta\_values[[iter]] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}
+      \CommentTok{\# set the vector ranges and break}
+\NormalTok{      beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{      obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      eta\_values }\OtherTok{\textless{}{-}}\NormalTok{ eta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      beta\_values }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{TESTING: SGD(No ADAM)}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{log\_reg\_sgd }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{128}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+iter 1000 eta: 0.001001001 obj: 0.4833996 
+iter 2000 eta: 0.0005002501 obj: 0.4805931 
+iter 3000 eta: 0.0003334445 obj: 0.5491107 
+iter 4000 eta: 0.0002500625 obj: 0.5893639 
+iter 5000 eta: 0.00020004 obj: 0.5901737 
+iter 6000 eta: 0.0001666944 obj: 0.5079305 
+iter 7000 eta: 0.0001428776 obj: 0.5557577 
+iter 8000 eta: 0.0001250156 obj: 0.5302283 
+iter 9000 eta: 0.0001111235 obj: 0.5144824 
+iter 10000 eta: 0.00010001 obj: 0.4482717 
+\end{verbatim}
+
+\textbf{PRINTING OUTPUT}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"betas }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+betas 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd}\SpecialCharTok{$}\NormalTok{beta)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+                 y
+X1   -0.0374177304
+X2   -0.0552814780
+X3    0.0871480285
+X4    0.0580243502
+X5   -0.0189962609
+X6    0.0600327036
+X7    0.0583065964
+X8    0.0826544426
+X9   -0.0130573669
+X10  -0.0288722073
+X11   0.0442981902
+X12  -0.0596011069
+X13  -0.0231924668
+X14  -0.0177032117
+X15   0.0775251237
+X16   0.0598423649
+X17   0.0928739761
+X18   0.0452066563
+X19  -0.0135841524
+X20   0.0788491230
+X21  -0.0033564909
+X22  -0.0622182148
+X23  -0.0492124789
+X24   0.0433869223
+X25  -0.0585099124
+X26   0.0077968745
+X27  -0.0573407763
+X28   0.1064990038
+X29  -0.0294319184
+X30   0.0637885418
+X31   0.0465411244
+X32   0.0036779891
+X33   0.1000613104
+X34   0.0057702215
+X35   0.0118514858
+X36   0.0300477880
+X37   0.1262146128
+X38   0.0627882793
+X39   0.0782829264
+X40   0.0849589547
+X41   0.1180254984
+X42  -0.0870878801
+X43   0.0020454805
+X44   0.0005051946
+X45  -0.0378314671
+X46  -0.0785590551
+X47   0.0119187505
+X48  -0.0345115973
+X49  -0.0047797042
+X50   0.0651658439
+X51  -0.0198412887
+X52   0.0103724821
+X53   0.0669682034
+X54   0.1025625684
+X55   0.0715028738
+X56  -0.0212135909
+X57  -0.0274997280
+X58  -0.0144037167
+X59   0.0468246109
+X60  -0.0802790289
+X61   0.0240443319
+X62   0.0435862402
+X63   0.0232969485
+X64  -0.0350831451
+X65   0.0581775678
+X66  -0.1065839898
+X67   0.1121147286
+X68   0.0532103946
+X69  -0.0896226804
+X70   0.0611916463
+X71   0.1201832638
+X72   0.0652131401
+X73  -0.0147496220
+X74  -0.0022954433
+X75   0.1160352733
+X76  -0.0676031996
+X77   0.0333043484
+X78  -0.0609328499
+X79   0.0708992186
+X80   0.0272890246
+X81   0.0080875462
+X82   0.0563924362
+X83  -0.0142391766
+X84   0.0264097326
+X85   0.0654634209
+X86   0.0970999207
+X87   0.0604138632
+X88  -0.0266525494
+X89   0.0652664682
+X90   0.0393979076
+X91   0.0184868293
+X92  -0.0408868594
+X93  -0.0154172422
+X94  -0.0778373353
+X95  -0.0178457479
+X96   0.0297788833
+X97   0.0882470995
+X98   0.0896540902
+X99   0.0287010143
+X100  0.0234507700
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"The function converged after"}\NormalTok{, }\FunctionTok{length}\NormalTok{(log\_reg\_sgd}\SpecialCharTok{$}\NormalTok{obj\_values), }\StringTok{" iterations }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+The function converged after 10000  iterations 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Eta Vals: }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Eta Vals: 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd}\SpecialCharTok{$}\NormalTok{eta\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 1.00000000 0.50000000 0.33333333 0.25000000 0.20000000 0.16666667
+ [7] 0.14285714 0.12500000 0.11111111 0.10000000 0.09090909 0.08333333
+[13] 0.07692308 0.07142857 0.06666667 0.06250000 0.05882353 0.05555556
+[19] 0.05263158 0.05000000 0.04761905 0.04545455 0.04347826 0.04166667
+[25] 0.04000000 0.03846154 0.03703704 0.03571429 0.03448276 0.03333333
+[31] 0.03225806 0.03125000 0.03030303 0.02941176 0.02857143 0.02777778
+[37] 0.02702703 0.02631579 0.02564103 0.02500000 0.02439024 0.02380952
+[43] 0.02325581 0.02272727 0.02222222 0.02173913 0.02127660 0.02083333
+[49] 0.02040816 0.02000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Objective Function vals }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Objective Function vals 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd}\SpecialCharTok{$}\NormalTok{obj\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 0.6931472 3.3224752 1.1757203 0.8951751 0.7049514 1.1566889 0.7740529
+ [8] 0.8481838 0.5961463 0.4365674 0.4961555 0.5629517 0.6110768 0.6097521
+[15] 0.5525478 0.5041885 0.4843160 0.4767519 0.4881898 0.4940512 0.5001145
+[22] 0.5452203 0.5080727 0.5241516 0.4911822 0.5035805 0.5921574 0.4454085
+[29] 0.6098483 0.5116747 0.4614430 0.5215265 0.6431649 0.5169591 0.5203553
+[36] 0.4789210 0.4938642 0.4818634 0.5021117 0.5493111 0.4736630 0.6490636
+[43] 0.5836519 0.5319409 0.5918284 0.4718493 0.4914902 0.5303020 0.5701241
+[50] 0.4897690
+\end{verbatim}
+
 \subsubsection{(5) Stochastic gradient descent with AMSGrad-ADAM-W
 momentum}\label{stochastic-gradient-descent-with-amsgrad-adam-w-momentum}
 
-\subsection{Part (a)}\label{part-a}
+(no backtracking line search, since AMSGrad-ADAM adjusts step sizes per
+parameter using momentum and adaptive scaling)
 
-\subsection{Part (b)}\label{part-b}
+We can apply the AMSGrad-ADAM update to the stochastic gradient
+algorithm shown previously, except multiplying (1 − ηλ) to \(x_k\):
+
+\textbf{Implement SGD ADAM}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# stochastic gradient descent with fixed schedule of decreasing step size}
+\NormalTok{log\_sgd\_adam }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{lambda =} \FloatTok{1e{-}4}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{) \{}
+  \CommentTok{\# Initialize}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  x }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(X)}
+\NormalTok{  y }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(y)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p))}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# To store eta values used each iteration}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }\CommentTok{\# To store beta values used each iteration}
+  
+  \CommentTok{\# Objective function: negative log{-}likelihood}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: scalar objective func value}
+  \CommentTok{\# comments: We want to minimize this function for logit regression}
+\NormalTok{   obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)}
+\NormalTok{    z }\OtherTok{\textless{}{-}}\NormalTok{ x }\SpecialCharTok{\%*\%}\NormalTok{ beta}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\SpecialCharTok{{-}}\NormalTok{(}\FunctionTok{t}\NormalTok{(y) }\SpecialCharTok{\%*\%}\NormalTok{ z) }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(}\FunctionTok{log}\NormalTok{(}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(z))))}
+\NormalTok{  \}}
+  
+\NormalTok{  obj\_sum }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y, subset) \{}
+\NormalTok{    x\_sub }\OtherTok{\textless{}{-}}\NormalTok{ x[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of x}
+\NormalTok{    y\_sub }\OtherTok{\textless{}{-}}\NormalTok{ y[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of y}
+    \FunctionTok{obj\_function}\NormalTok{(beta, x\_sub, y\_sub)}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+  \CommentTok{\# input: Beta vector, x matrix, y matrix}
+  \CommentTok{\# output: gradient vector in the dimension of nrow(Beta) x 1}
+  \CommentTok{\# comments: We use this for gradient descent}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
+\NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)                       }\CommentTok{\# define m}
+\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z) }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\FunctionTok{t}\NormalTok{(x) }\SpecialCharTok{\%*\%}\NormalTok{ (}\FunctionTok{sig}\NormalTok{(x }\SpecialCharTok{\%*\%}\NormalTok{ beta) }\SpecialCharTok{{-}}\NormalTok{ y))}
+\NormalTok{  \}}
+  
+\NormalTok{  grad\_sum }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y, subset) \{}
+\NormalTok{    x\_sub }\OtherTok{\textless{}{-}}\NormalTok{ x[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of x}
+\NormalTok{    y\_sub }\OtherTok{\textless{}{-}}\NormalTok{ y[subset, , drop }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]   }\CommentTok{\# subset of y}
+    \FunctionTok{gradient}\NormalTok{(beta, x\_sub, y\_sub)}
+\NormalTok{  \}}
+
+  \CommentTok{\# Algorithm:}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+    
+    \CommentTok{\# subset of data}
+\NormalTok{    subset }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\NormalTok{n, s, }\AttributeTok{replace=}\ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{    obj\_sub }\OtherTok{\textless{}{-}} \FunctionTok{obj\_sum}\NormalTok{(beta, x, y, subset)}
+\NormalTok{    grad\_sub }\OtherTok{\textless{}{-}} \FunctionTok{grad\_sum}\NormalTok{(beta, x, y, subset)}
+    
+    \CommentTok{\# ADAM step}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) \{}
+\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad\_sub}
+\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad\_sub}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
+\NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_1 }\SpecialCharTok{*}\NormalTok{ m\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad\_sub}
+\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_2 }\SpecialCharTok{*}\NormalTok{ z\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad\_sub}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(z\_hat\_k\_prev, z\_k)}
+\NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
+\NormalTok{    \}}
+    
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ eta }\SpecialCharTok{*}\NormalTok{ lambda) }\SpecialCharTok{*}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta }\SpecialCharTok{*}\NormalTok{ (z\_tild\_k }\SpecialCharTok{*}\NormalTok{ m\_hat\_k)}
+    
+    \CommentTok{\# save values to the matrix}
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta}
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta\_new, x, y)}
+\NormalTok{    beta\_values[[iter]] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}
+      \CommentTok{\# set the vector ranges and break}
+\NormalTok{      beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{      obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      eta\_values }\OtherTok{\textless{}{-}}\NormalTok{ eta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{      beta\_values }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{    z\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_k}
+\NormalTok{    m\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ m\_k}
+\NormalTok{    z\_hat\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_hat\_k}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{TESTING: SGD ADAM}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{log\_reg\_sgd\_adam }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd\_adam}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{lambda =} \FloatTok{1e{-}4}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+iter obj: 12.06407 
+iter obj: 2.531643 
+iter obj: 5.737204 
+iter obj: 3.60273 
+iter obj: 1.100128 
+iter obj: 2.217027 
+iter obj: 5.417208 
+iter obj: 4.39512 
+iter obj: 2.842576 
+iter obj: 2.220743 
+\end{verbatim}
+
+\textbf{PRINTING OUTPUT: SGD ADAM}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"betas }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+betas 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd\_adam}\SpecialCharTok{$}\NormalTok{beta)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+               y
+X1   -3.26835781
+X2   -0.44347203
+X3    3.26305399
+X4    0.94087725
+X5   -1.18747337
+X6    1.48535302
+X7    1.84180957
+X8    1.77463298
+X9    0.41673067
+X10  -1.19771275
+X11   1.21756565
+X12  -1.41940829
+X13   0.52268082
+X14  -1.97801057
+X15  -0.95729656
+X16   2.02827330
+X17   0.14700776
+X18   0.97803255
+X19  -0.84171785
+X20   0.67821527
+X21   0.09830971
+X22  -4.00163941
+X23  -1.17336298
+X24  -0.76923237
+X25  -0.62323199
+X26  -0.18242502
+X27  -3.92574861
+X28   0.79151178
+X29   0.76415956
+X30   0.29982800
+X31   1.04701580
+X32  -1.11262368
+X33   2.41667412
+X34   1.63027579
+X35   0.32333089
+X36  -0.19400756
+X37   1.36746172
+X38   3.79827704
+X39   0.67324011
+X40   2.06559579
+X41   0.92588667
+X42  -0.95686149
+X43  -0.83831018
+X44   0.85262437
+X45   0.79173351
+X46  -2.37482144
+X47   0.24220381
+X48   2.55728469
+X49  -2.54975580
+X50   0.26767449
+X51  -0.39598156
+X52  -1.71712350
+X53  -0.75483463
+X54   0.54904300
+X55   0.43459976
+X56  -1.44002390
+X57   0.62120236
+X58   0.31331999
+X59   0.75910558
+X60  -2.79707509
+X61   0.05223149
+X62  -0.39382081
+X63  -1.00469254
+X64   0.18428308
+X65   1.03402005
+X66  -0.39573095
+X67  -0.59921503
+X68   0.03854199
+X69  -0.13969101
+X70   2.57773168
+X71   1.05802705
+X72  -0.36663329
+X73  -0.52748695
+X74  -0.47003475
+X75   1.22959112
+X76   0.37289865
+X77   1.06049289
+X78  -1.53892119
+X79   1.11644354
+X80   0.07809200
+X81   0.87913100
+X82  -0.43623013
+X83   0.24923502
+X84   0.12628232
+X85  -1.68112051
+X86   1.22133905
+X87   0.45633608
+X88  -2.59868351
+X89  -0.26967113
+X90  -0.83240432
+X91  -1.55681440
+X92  -2.65887137
+X93   0.43522903
+X94   0.10414063
+X95   1.04254112
+X96  -1.35318743
+X97   0.31668937
+X98   0.60360257
+X99  -1.69507364
+X100  1.63596965
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"The function converged after"}\NormalTok{, }\FunctionTok{length}\NormalTok{(log\_reg\_sgd\_adam}\SpecialCharTok{$}\NormalTok{obj\_values), }\StringTok{" iterations }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+The function converged after 10000  iterations 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Eta Vals: }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Eta Vals: 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd\_adam}\SpecialCharTok{$}\NormalTok{eta\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[39] 1 1 1 1 1 1 1 1 1 1 1 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Objective Function vals }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Objective Function vals 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(log\_reg\_sgd\_adam}\SpecialCharTok{$}\NormalTok{obj\_values[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1]      Inf      Inf      Inf      Inf      Inf 28.34960      Inf      Inf
+ [9] 31.88056      Inf      Inf      Inf      Inf      Inf      Inf      Inf
+[17]      Inf      Inf      Inf 29.73365 55.06724 49.79323 30.45774 28.42583
+[25]      Inf      Inf      Inf      Inf      Inf      Inf      Inf      Inf
+[33]      Inf 28.07532 24.99386 25.21001 30.87866 30.00103 24.65384 22.25406
+[41] 23.06119 23.73060 22.43201 21.15671 20.21419 19.86670 18.91779 18.97949
+[49] 22.15657 21.18867
+\end{verbatim}
+
+\subsection{Part (a) Hyperparameter
+Discussion}\label{part-a-hyperparameter-discussion}
+
+Discuss how you selected the various hyperparameters for each of the
+algorithms
+
+For BLS, I selected tau and epsilon = 0.5, because they should be
+between 0 and 1 and 0.5 is relatively standard in order for it to
+converge
+
+For BLS with Nesterov, I kept the hyperparameters the same as BLS
+because it was standard from before
+
+For gradient descent with backtracking, I selected epsilon = 0.5 because
+that is fairly standard in the Armijo condition
+
+For SGD, The decreasing step size implemented was eta / number of
+iterations, ensuring that eta decreases with every iteration, as it is
+also a common algorithm used in literature to decrease eta
+
+For AMSGRAD-ADAM, I selected Beta1 = 0.9 and Beta2 = 0.999, In order
+that Beta1 and Beta2 to not be to o small, and it is also a common step
+size that is used in
+
+For AMSGRAD-ADAM-W, I selected the same coefficients as AMSGRAD, it's
+just that I selected lambda to be a very small value \textasciitilde1e-4
+
+\subsection{Part (b) Metrics}\label{part-b-metrics}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{g }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ data, }\AttributeTok{family =} \FunctionTok{binomial}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+For the algorithm BLS, BLS\_N, ADAM, SGD, SGD\_ADAM\_W
+
+The iterations took 1909, 1909, 275, 10000, and 10000 respectively
 
 
 

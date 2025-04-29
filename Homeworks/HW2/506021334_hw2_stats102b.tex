@@ -254,6 +254,12 @@ i Specify the column types or set `show_col_types = FALSE` to quiet this message
 #   X39 <dbl>, X40 <dbl>, X41 <dbl>, X42 <dbl>, X43 <dbl>, X44 <dbl>, ...
 \end{verbatim}
 
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{777}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
 Our data set has 10000 observations, 1 binary outcome variable y, and
 100 predictor variables X1-X100
 
@@ -732,7 +738,7 @@ parameters is small)
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{\# logistic gradient descent w/ bls nesterov}
-\NormalTok{log\_bls\_n }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{tau =} \FloatTok{0.5}\NormalTok{) \{}
+\NormalTok{log\_bls\_n }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{tau =} \FloatTok{0.8}\NormalTok{) \{}
   \CommentTok{\# Initialize}
 \NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
 \NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
@@ -780,7 +786,7 @@ parameters is small)
 \NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
 \NormalTok{      beta\_prev }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[[iter }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{]]}
 \NormalTok{      xi }\OtherTok{\textless{}{-}}\NormalTok{ (iter }\SpecialCharTok{+} \DecValTok{1}\NormalTok{) }\SpecialCharTok{/}\NormalTok{ (iter }\SpecialCharTok{+} \DecValTok{2}\NormalTok{)}
-\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{+}\NormalTok{ xi }\SpecialCharTok{*}\NormalTok{ (beta }\SpecialCharTok{{-}}\NormalTok{ beta\_prev)}
+\NormalTok{      y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{+}\NormalTok{ xi }\SpecialCharTok{*}\NormalTok{ ((beta }\SpecialCharTok{{-}}\NormalTok{ beta\_prev))}
 \NormalTok{    \}}
 
 \NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ y\_k }\SpecialCharTok{{-}}\NormalTok{ eta\_bt }\SpecialCharTok{*}\NormalTok{ grad}
@@ -816,7 +822,7 @@ parameters is small)
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{log\_reg\_bls\_n }\OtherTok{\textless{}{-}} \FunctionTok{log\_bls\_n}\NormalTok{(X, y, }\AttributeTok{tol=}\FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter=}\DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon=}\FloatTok{0.5}\NormalTok{, }\AttributeTok{tau=}\FloatTok{0.5}\NormalTok{)}
+\NormalTok{log\_reg\_bls\_n }\OtherTok{\textless{}{-}} \FunctionTok{log\_bls\_n}\NormalTok{(X, y, }\AttributeTok{tol=}\FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter=}\DecValTok{10000}\NormalTok{, }\AttributeTok{epsilon=}\FloatTok{0.5}\NormalTok{, }\AttributeTok{tau=}\FloatTok{0.8}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -840,106 +846,106 @@ betas
 
 \begin{verbatim}
                  y
-X1   -0.1418188273
-X2   -0.0601340162
-X3    0.1588169528
-X4    0.1328223189
-X5   -0.0480437781
-X6    0.0992481092
-X7    0.1189707785
-X8    0.1165560855
-X9    0.0121222291
-X10   0.0002641372
-X11   0.0440526577
-X12  -0.1793886158
-X13  -0.0107332284
-X14  -0.1230510680
-X15   0.0724799230
-X16   0.0571868940
-X17   0.1299458439
-X18   0.1249113906
-X19  -0.0018170795
-X20   0.1248825007
-X21  -0.0107845610
-X22  -0.1431801553
-X23  -0.1094846603
-X24   0.0576435159
-X25  -0.1190174922
-X26   0.0164879978
-X27  -0.0977482724
-X28   0.1544632196
-X29  -0.0276524076
-X30   0.0164226883
-X31  -0.0589010945
-X32   0.0205242099
-X33   0.1352153619
-X34  -0.0301792708
-X35  -0.0097106467
-X36   0.0631274232
-X37   0.1972595891
-X38   0.0932479560
-X39   0.1242393813
-X40   0.1466042152
-X41   0.1112967707
-X42  -0.1226544766
-X43  -0.0374866338
-X44  -0.0155583465
-X45  -0.0103256878
-X46  -0.1807311531
-X47   0.0122916067
-X48   0.0309436582
-X49   0.0257891274
-X50   0.1230837280
-X51  -0.0237134869
-X52  -0.0136672407
-X53   0.0802510780
-X54   0.1695795679
-X55   0.1711403640
-X56  -0.0447703054
-X57  -0.0407325139
-X58  -0.0768578382
-X59   0.0786448045
-X60  -0.1192193182
-X61  -0.0080431756
-X62   0.0701535429
-X63   0.0295238798
-X64  -0.1090225592
-X65   0.0633967271
-X66  -0.1450871355
-X67   0.1404424947
-X68   0.0649021774
-X69  -0.1595801011
-X70   0.1128079446
-X71   0.1888668197
-X72   0.0920649207
-X73  -0.0647758044
-X74  -0.0684344716
-X75   0.2306707321
-X76  -0.1312078759
-X77   0.0301767178
-X78  -0.0742090881
-X79   0.0695790861
-X80  -0.0273839196
-X81   0.0183730389
-X82   0.0555339156
-X83  -0.0196159895
-X84  -0.0119020076
-X85   0.0981161430
-X86   0.1724354285
-X87   0.0832570899
-X88  -0.0070115810
-X89   0.0720539875
-X90   0.0779093972
-X91   0.0026928031
-X92  -0.1223692130
-X93   0.0073627318
-X94  -0.0996425700
-X95  -0.0485788118
-X96   0.0338587696
-X97   0.1496954257
-X98   0.1702285222
-X99   0.0197714549
-X100  0.0070161693
+X1   -0.1418263794
+X2   -0.0601388591
+X3    0.1588267497
+X4    0.1328279392
+X5   -0.0480506394
+X6    0.0992548055
+X7    0.1189794773
+X8    0.1165617782
+X9    0.0121210900
+X10   0.0002652682
+X11   0.0440525896
+X12  -0.1794038315
+X13  -0.0107339373
+X14  -0.1230560308
+X15   0.0724838710
+X16   0.0571919899
+X17   0.1299511146
+X18   0.1249158303
+X19  -0.0018154954
+X20   0.1248931359
+X21  -0.0107871202
+X22  -0.1431957846
+X23  -0.1094930269
+X24   0.0576439569
+X25  -0.1190248307
+X26   0.0164864074
+X27  -0.0977571692
+X28   0.1544691126
+X29  -0.0276528501
+X30   0.0164184648
+X31  -0.0589073210
+X32   0.0205289418
+X33   0.1352223830
+X34  -0.0301846415
+X35  -0.0097152706
+X36   0.0631324820
+X37   0.1972701788
+X38   0.0932518671
+X39   0.1242469201
+X40   0.1466077067
+X41   0.1113013302
+X42  -0.1226607166
+X43  -0.0374935885
+X44  -0.0155599449
+X45  -0.0103222178
+X46  -0.1807432316
+X47   0.0122929903
+X48   0.0309476137
+X49   0.0257875173
+X50   0.1230898353
+X51  -0.0237110270
+X52  -0.0136673590
+X53   0.0802556361
+X54   0.1695903968
+X55   0.1711505641
+X56  -0.0447755635
+X57  -0.0407377293
+X58  -0.0768652234
+X59   0.0786463310
+X60  -0.1192273578
+X61  -0.0080502803
+X62   0.0701567008
+X63   0.0295264284
+X64  -0.1090289520
+X65   0.0633998643
+X66  -0.1450928496
+X67   0.1404497219
+X68   0.0649048905
+X69  -0.1595896445
+X70   0.1128140054
+X71   0.1888821288
+X72   0.0920697212
+X73  -0.0647787849
+X74  -0.0684414958
+X75   0.2306799570
+X76  -0.1312182054
+X77   0.0301762811
+X78  -0.0742102167
+X79   0.0695810289
+X80  -0.0273871826
+X81   0.0183748140
+X82   0.0555414970
+X83  -0.0196157885
+X84  -0.0119065906
+X85   0.0981180432
+X86   0.1724480190
+X87   0.0832605298
+X88  -0.0070189478
+X89   0.0720560185
+X90   0.0779116425
+X91   0.0026900656
+X92  -0.1223807711
+X93   0.0073624203
+X94  -0.0996496631
+X95  -0.0485854423
+X96   0.0338563238
+X97   0.1497058189
+X98   0.1702384964
+X99   0.0197774565
+X100  0.0070126286
 \end{verbatim}
 
 \begin{Shaded}
@@ -949,7 +955,7 @@ X100  0.0070161693
 \end{Shaded}
 
 \begin{verbatim}
-The function converged after 1909  iterations 
+The function converged after 1443  iterations 
 \end{verbatim}
 
 \begin{Shaded}
@@ -969,11 +975,15 @@ Eta Vals:
 \end{Shaded}
 
 \begin{verbatim}
- [1] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
-[11] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
-[21] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
-[31] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
-[41] 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625 0.0625
+ [1] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+ [7] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[13] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[19] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[25] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[31] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[37] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[43] 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935 0.08589935
+[49] 0.08589935 0.08589935
 \end{verbatim}
 
 \begin{Shaded}
@@ -993,14 +1003,14 @@ Objective Function vals
 \end{Shaded}
 
 \begin{verbatim}
- [1] 0.5642463 0.5491551 0.5446388 0.5427888 0.5418291 0.5412092 0.5407301
- [8] 0.5403132 0.5399257 0.5395537 0.5391908 0.5388343 0.5384829 0.5381361
-[15] 0.5377934 0.5374547 0.5371200 0.5367892 0.5364622 0.5361389 0.5358194
-[22] 0.5355035 0.5351913 0.5348826 0.5345775 0.5342759 0.5339777 0.5336830
-[29] 0.5333916 0.5331036 0.5328188 0.5325373 0.5322591 0.5319840 0.5317120
-[36] 0.5314432 0.5311774 0.5309146 0.5306549 0.5303981 0.5301442 0.5298932
-[43] 0.5296451 0.5293997 0.5291572 0.5289174 0.5286804 0.5284460 0.5282142
-[50] 0.5279851
+ [1] 0.5475063 0.5433692 0.5420351 0.5412959 0.5407164 0.5401878 0.5396798
+ [8] 0.5391836 0.5386963 0.5382171 0.5377455 0.5372814 0.5368247 0.5363752
+[15] 0.5359328 0.5354973 0.5350688 0.5346469 0.5342317 0.5338231 0.5334209
+[22] 0.5330250 0.5326353 0.5322517 0.5318741 0.5315025 0.5311367 0.5307766
+[29] 0.5304221 0.5300732 0.5297297 0.5293916 0.5290587 0.5287310 0.5284085
+[36] 0.5280909 0.5277783 0.5274705 0.5271675 0.5268692 0.5265755 0.5262864
+[43] 0.5260017 0.5257214 0.5254454 0.5251737 0.5249062 0.5246428 0.5243834
+[50] 0.5241280
 \end{verbatim}
 
 \subsubsection{(3) Gradient descent with AMSGrad-ADAM
@@ -1070,13 +1080,13 @@ z_k &= \beta_2 z_{k-1} + (1-\beta_2)(G_k \odot G_k), \quad \beta_2∈(0, 1), \qu
 \NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad}
 \NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad}\SpecialCharTok{\^{}}\DecValTok{2}
 \NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
-\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
 \NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
 \NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
 \NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_1 }\SpecialCharTok{*}\NormalTok{ m\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad}
 \NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_2 }\SpecialCharTok{*}\NormalTok{ z\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad}\SpecialCharTok{\^{}}\DecValTok{2}
 \NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
-\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(z\_hat\_k\_prev, z\_k)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(z\_hat\_k\_prev, z\_k)}
 \NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
 \NormalTok{    \}}
     
@@ -1154,106 +1164,106 @@ betas
 
 \begin{verbatim}
                  y
-X1   -0.1418463622
-X2   -0.0601523924
-X3    0.1588541573
-X4    0.1328428605
-X5   -0.0480703025
-X6    0.0992737155
-X7    0.1190029511
-X8    0.1165767113
-X9    0.0121181465
-X10   0.0002687163
-X11   0.0440520463
-X12  -0.1794462460
-X13  -0.0107345508
-X14  -0.1230689700
-X15   0.0724947456
-X16   0.0572062077
-X17   0.1299656238
-X18   0.1249283104
-X19  -0.0018098372
-X20   0.1249226315
-X21  -0.0107941081
-X22  -0.1432408159
-X23  -0.1095163677
-X24   0.0576437775
-X25  -0.1190444250
-X26   0.0164815558
-X27  -0.0977827701
-X28   0.1544841023
-X29  -0.0276535650
-X30   0.0164057779
-X31  -0.0589244496
-X32   0.0205423298
-X33   0.1352412184
-X34  -0.0302001111
-X35  -0.0097285921
-X36   0.0631465984
-X37   0.1972980191
-X38   0.0932625799
-X39   0.1242670193
-X40   0.1466159862
-X41   0.1113132350
-X42  -0.1226774468
-X43  -0.0375124689
-X44  -0.0155647662
-X45  -0.0103122341
-X46  -0.1807760542
-X47   0.0122965142
-X48   0.0309589790
-X49   0.0257828924
-X50   0.1231055162
-X51  -0.0237032815
-X52  -0.0136671230
-X53   0.0802685889
-X54   0.1696197757
-X55   0.1711787988
-X56  -0.0447899442
-X57  -0.0407526558
-X58  -0.0768861287
-X59   0.0786501603
-X60  -0.1192489709
-X61  -0.0080705701
-X62   0.0701660587
-X63   0.0295336021
-X64  -0.1090461166
-X65   0.0634079799
-X66  -0.1451078658
-X67   0.1404694799
-X68   0.0649117255
-X69  -0.1596152179
-X70   0.1128306371
-X71   0.1889251386
-X72   0.0920819446
-X73  -0.0647859932
-X74  -0.0684622678
-X75   0.2307039691
-X76  -0.1312469777
-X77   0.0301753385
-X78  -0.0742125391
-X79   0.0695862174
-X80  -0.0273963433
-X81   0.0183796051
-X82   0.0555625883
-X83  -0.0196148306
-X84  -0.0119200074
-X85   0.0981226620
-X86   0.1724823303
-X87   0.0832700595
-X88  -0.0070410770
-X89   0.0720618508
-X90   0.0779171504
-X91   0.0026816137
-X92  -0.1224128603
-X93   0.0073612843
-X94  -0.0996681796
-X95  -0.0486043333
-X96   0.0338486816
-X97   0.1497347964
-X98   0.1702659904
-X99   0.0197950906
-X100  0.0070016149
+X1   -0.1418454849
+X2   -0.0601519765
+X3    0.1588541105
+X4    0.1328432036
+X5   -0.0480698927
+X6    0.0992738274
+X7    0.1190031009
+X8    0.1165771060
+X9    0.0121186568
+X10   0.0002692862
+X11   0.0440526339
+X12  -0.1794460643
+X13  -0.0107336589
+X14  -0.1230683354
+X15   0.0724951933
+X16   0.0572069676
+X17   0.1299658957
+X18   0.1249286333
+X19  -0.0018093352
+X20   0.1249220832
+X21  -0.0107937892
+X22  -0.1432400037
+X23  -0.1095158039
+X24   0.0576442709
+X25  -0.1190438042
+X26   0.0164821239
+X27  -0.0977823806
+X28   0.1544852906
+X29  -0.0276528153
+X30   0.0164067155
+X31  -0.0589237822
+X32   0.0205429977
+X33   0.1352414127
+X34  -0.0301992700
+X35  -0.0097282034
+X36   0.0631470517
+X37   0.1972976603
+X38   0.0932627995
+X39   0.1242672243
+X40   0.1466160415
+X41   0.1113132623
+X42  -0.1226767443
+X43  -0.0375124313
+X44  -0.0155639906
+X45  -0.0103119024
+X46  -0.1807752324
+X47   0.0122969426
+X48   0.0309593047
+X49   0.0257831520
+X50   0.1231058283
+X51  -0.0237022950
+X52  -0.0136668437
+X53   0.0802692451
+X54   0.1696197561
+X55   0.1711788101
+X56  -0.0447894933
+X57  -0.0407522017
+X58  -0.0768854044
+X59   0.0786508030
+X60  -0.1192481480
+X61  -0.0080695175
+X62   0.0701660302
+X63   0.0295340139
+X64  -0.1090452901
+X65   0.0634084702
+X66  -0.1451071892
+X67   0.1404697803
+X68   0.0649124105
+X69  -0.1596141322
+X70   0.1128300914
+X71   0.1889244806
+X72   0.0920823098
+X73  -0.0647856673
+X74  -0.0684613155
+X75   0.2307043702
+X76  -0.1312463971
+X77   0.0301756741
+X78  -0.0742119633
+X79   0.0695864468
+X80  -0.0273958006
+X81   0.0183803428
+X82   0.0555629189
+X83  -0.0196148832
+X84  -0.0119195971
+X85   0.0981231232
+X86   0.1724823705
+X87   0.0832704525
+X88  -0.0070402199
+X89   0.0720618891
+X90   0.0779178976
+X91   0.0026821896
+X92  -0.1224121573
+X93   0.0073619631
+X94  -0.0996671370
+X95  -0.0486034289
+X96   0.0338488127
+X97   0.1497352579
+X98   0.1702661451
+X99   0.0197954507
+X100  0.0070025016
 \end{verbatim}
 
 \begin{Shaded}
@@ -1263,7 +1273,7 @@ X100  0.0070016149
 \end{Shaded}
 
 \begin{verbatim}
-The function converged after 275  iterations 
+The function converged after 279  iterations 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1304,15 +1314,15 @@ Objective Function vals
 \end{Shaded}
 
 \begin{verbatim}
- [1]        Inf        Inf        Inf        Inf 19.8520058 12.9304874
- [7]  5.8396817  4.3830145  4.7467728  1.7187755  3.3341688  4.2608418
-[13]  4.4904099  4.1356096  3.3187136  2.1972655  1.2498733  3.3696220
-[19]  2.2058144  1.3250353  2.0043160  2.4767619  2.5952903  2.3798886
-[25]  1.8988031  1.3061757  1.2508394  2.1151974  1.1939994  1.1456952
-[31]  1.4557426  1.5921738  1.4919325  1.2018727  0.9106533  1.2013993
-[37]  1.1157532  0.8317901  0.9954680  1.0783952  0.9797300  0.7667368
-[43]  0.7678432  0.8976035  0.6489309  0.7665641  0.7968736  0.6749666
-[49]  0.5739384  0.7735166
+ [1]        Inf        Inf        Inf        Inf 22.2832809 14.8373097
+ [7]  7.1284249  2.0996220  6.1137497  1.3895229  2.9819074  3.8056161
+[13]  3.8809432  3.3404494  2.3347514  1.1762725  2.9227801  1.5778861
+[19]  1.3114477  2.0080097  2.3413146  2.2664773  1.8437349  1.2165596
+[25]  1.0948241  1.9858414  0.9086495  1.1820604  1.4516938  1.4476730
+[31]  1.1868100  0.8328216  1.1328824  0.9287048  0.7908114  0.9833457
+[37]  0.9977538  0.8109798  0.6450300  0.9912377  0.6135863  0.7809745
+[43]  0.8118218  0.6527392  0.5829003  0.7306665  0.6084322  0.7789611
+[49]  0.7352627  0.5369212
 \end{verbatim}
 
 \subsubsection{(4) Stochastic gradient descent with a fixed schedule of
@@ -1355,7 +1365,7 @@ f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]}
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{\# stochastic gradient descent with fixed schedule of decreasing step size}
-\NormalTok{log\_sgd }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{) \{}
+\NormalTok{log\_sgd }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{) \{}
   \CommentTok{\# Initialize}
 \NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
 \NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
@@ -1388,7 +1398,11 @@ f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]}
   \CommentTok{\# comments: We use this for gradient descent}
 \NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta, x, y) \{}
 \NormalTok{    m }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(x)                       }\CommentTok{\# define m}
-\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z) }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    sig }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(z)\{ }
+\NormalTok{      z }\OtherTok{\textless{}{-}} \FunctionTok{pmin}\NormalTok{(z, }\DecValTok{20}\NormalTok{)  }\CommentTok{\# Clip high values}
+\NormalTok{      z }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(z, }\SpecialCharTok{{-}}\DecValTok{20}\NormalTok{) }\CommentTok{\# Clip l}
+      \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{z))  }\CommentTok{\# sigmoid function}
+\NormalTok{    \}}
 \NormalTok{    (}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ m) }\SpecialCharTok{*}\NormalTok{ (}\FunctionTok{t}\NormalTok{(x) }\SpecialCharTok{\%*\%}\NormalTok{ (}\FunctionTok{sig}\NormalTok{(x }\SpecialCharTok{\%*\%}\NormalTok{ beta) }\SpecialCharTok{{-}}\NormalTok{ y))}
 \NormalTok{  \}}
   
@@ -1400,14 +1414,8 @@ f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]}
 
   \CommentTok{\# Algorithm:}
   \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
-    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, iter, }\StringTok{"eta:"}\NormalTok{, eta\_k, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
-    \ControlFlowTok{if}\NormalTok{(iter }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) \{}
-\NormalTok{      eta\_k }\OtherTok{=}\NormalTok{ eta }\SpecialCharTok{/}\NormalTok{ iter}
-\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
-\NormalTok{      eta\_k }\OtherTok{=}\NormalTok{ eta}
-\NormalTok{    \}}
-    
-    \CommentTok{\#cat("iter ", iter, "\textbackslash{}n")}
+
+\NormalTok{    eta\_k }\OtherTok{=}\NormalTok{ eta }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+} \FloatTok{0.001} \SpecialCharTok{*}\NormalTok{ iter)}
     
     \CommentTok{\# subset of data}
 \NormalTok{    subset }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\NormalTok{n, s, }\AttributeTok{replace=}\ConstantTok{FALSE}\NormalTok{)}
@@ -1431,6 +1439,7 @@ f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]}
 \NormalTok{    \}}
     
 \NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1} \SpecialCharTok{||}\NormalTok{ iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, iter, }\StringTok{"eta:"}\NormalTok{, eta\_k, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
 \NormalTok{  \}}
   
   \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
@@ -1442,21 +1451,12 @@ f_{I_k}(x_k) = \frac{1}{s} \sum_{i∈I_k} f_i(x_k), \quad \nabla{[f_{I_k}(x_k)]}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{log\_reg\_sgd }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{128}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
+\NormalTok{log\_reg\_sgd }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}4}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{s =} \DecValTok{256}\NormalTok{, }\AttributeTok{eta =} \FloatTok{0.001}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-iter 1000 eta: 0.001001001 obj: 0.4833996 
-iter 2000 eta: 0.0005002501 obj: 0.4805931 
-iter 3000 eta: 0.0003334445 obj: 0.5491107 
-iter 4000 eta: 0.0002500625 obj: 0.5893639 
-iter 5000 eta: 0.00020004 obj: 0.5901737 
-iter 6000 eta: 0.0001666944 obj: 0.5079305 
-iter 7000 eta: 0.0001428776 obj: 0.5557577 
-iter 8000 eta: 0.0001250156 obj: 0.5302283 
-iter 9000 eta: 0.0001111235 obj: 0.5144824 
-iter 10000 eta: 0.00010001 obj: 0.4482717 
+iter 1 eta: 0.000999001 obj: 0.6931472 
 \end{verbatim}
 
 \textbf{PRINTING OUTPUT}
@@ -1478,107 +1478,107 @@ betas
 \end{Shaded}
 
 \begin{verbatim}
-                 y
-X1   -0.0374177304
-X2   -0.0552814780
-X3    0.0871480285
-X4    0.0580243502
-X5   -0.0189962609
-X6    0.0600327036
-X7    0.0583065964
-X8    0.0826544426
-X9   -0.0130573669
-X10  -0.0288722073
-X11   0.0442981902
-X12  -0.0596011069
-X13  -0.0231924668
-X14  -0.0177032117
-X15   0.0775251237
-X16   0.0598423649
-X17   0.0928739761
-X18   0.0452066563
-X19  -0.0135841524
-X20   0.0788491230
-X21  -0.0033564909
-X22  -0.0622182148
-X23  -0.0492124789
-X24   0.0433869223
-X25  -0.0585099124
-X26   0.0077968745
-X27  -0.0573407763
-X28   0.1064990038
-X29  -0.0294319184
-X30   0.0637885418
-X31   0.0465411244
-X32   0.0036779891
-X33   0.1000613104
-X34   0.0057702215
-X35   0.0118514858
-X36   0.0300477880
-X37   0.1262146128
-X38   0.0627882793
-X39   0.0782829264
-X40   0.0849589547
-X41   0.1180254984
-X42  -0.0870878801
-X43   0.0020454805
-X44   0.0005051946
-X45  -0.0378314671
-X46  -0.0785590551
-X47   0.0119187505
-X48  -0.0345115973
-X49  -0.0047797042
-X50   0.0651658439
-X51  -0.0198412887
-X52   0.0103724821
-X53   0.0669682034
-X54   0.1025625684
-X55   0.0715028738
-X56  -0.0212135909
-X57  -0.0274997280
-X58  -0.0144037167
-X59   0.0468246109
-X60  -0.0802790289
-X61   0.0240443319
-X62   0.0435862402
-X63   0.0232969485
-X64  -0.0350831451
-X65   0.0581775678
-X66  -0.1065839898
-X67   0.1121147286
-X68   0.0532103946
-X69  -0.0896226804
-X70   0.0611916463
-X71   0.1201832638
-X72   0.0652131401
-X73  -0.0147496220
-X74  -0.0022954433
-X75   0.1160352733
-X76  -0.0676031996
-X77   0.0333043484
-X78  -0.0609328499
-X79   0.0708992186
-X80   0.0272890246
-X81   0.0080875462
-X82   0.0563924362
-X83  -0.0142391766
-X84   0.0264097326
-X85   0.0654634209
-X86   0.0970999207
-X87   0.0604138632
-X88  -0.0266525494
-X89   0.0652664682
-X90   0.0393979076
-X91   0.0184868293
-X92  -0.0408868594
-X93  -0.0154172422
-X94  -0.0778373353
-X95  -0.0178457479
-X96   0.0297788833
-X97   0.0882470995
-X98   0.0896540902
-X99   0.0287010143
-X100  0.0234507700
+              y
+X1   0.01135434
+X2   0.01553247
+X3   0.02547594
+X4   0.02478308
+X5   0.01649211
+X6   0.02267313
+X7   0.02279703
+X8   0.02286618
+X9   0.01939711
+X10  0.01766395
+X11  0.02058742
+X12  0.01023013
+X13  0.01838424
+X14  0.01132511
+X15  0.02220197
+X16  0.01983699
+X17  0.02474106
+X18  0.02455106
+X19  0.01809302
+X20  0.02237795
+X21  0.01786076
+X22  0.01215984
+X23  0.01263780
+X24  0.02156132
+X25  0.01241035
+X26  0.01898106
+X27  0.01457513
+X28  0.02594599
+X29  0.01643030
+X30  0.01906561
+X31  0.01544249
+X32  0.01858988
+X33  0.02373124
+X34  0.01690271
+X35  0.01768783
+X36  0.02072269
+X37  0.02700170
+X38  0.02219808
+X39  0.02400643
+X40  0.02591264
+X41  0.02360806
+X42  0.01282970
+X43  0.01740925
+X44  0.01747289
+X45  0.01663346
+X46  0.01006871
+X47  0.01872684
+X48  0.01928490
+X49  0.01917166
+X50  0.02379881
+X51  0.01596886
+X52  0.01697237
+X53  0.02194963
+X54  0.02668542
+X55  0.02570057
+X56  0.01660433
+X57  0.01652876
+X58  0.01447817
+X59  0.02157667
+X60  0.01216898
+X61  0.01935009
+X62  0.02070880
+X63  0.01855471
+X64  0.01285274
+X65  0.02124817
+X66  0.01023270
+X67  0.02506424
+X68  0.02185364
+X69  0.01003059
+X70  0.02329080
+X71  0.02609856
+X72  0.02219396
+X73  0.01473030
+X74  0.01507792
+X75  0.02978834
+X76  0.01263462
+X77  0.01944849
+X78  0.01418123
+X79  0.02073226
+X80  0.01686592
+X81  0.01860687
+X82  0.01930083
+X83  0.01695688
+X84  0.01896319
+X85  0.02295664
+X86  0.02579406
+X87  0.02208678
+X88  0.01823207
+X89  0.02214396
+X90  0.02211423
+X91  0.01753706
+X92  0.01355594
+X93  0.01862842
+X94  0.01360701
+X95  0.01685557
+X96  0.02016261
+X97  0.02535342
+X98  0.02580509
+X99  0.01852538
+X100 0.01809922
 \end{verbatim}
 
 \begin{Shaded}
@@ -1588,7 +1588,7 @@ X100  0.0234507700
 \end{Shaded}
 
 \begin{verbatim}
-The function converged after 10000  iterations 
+The function converged after 774  iterations 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1608,15 +1608,16 @@ Eta Vals:
 \end{Shaded}
 
 \begin{verbatim}
- [1] 1.00000000 0.50000000 0.33333333 0.25000000 0.20000000 0.16666667
- [7] 0.14285714 0.12500000 0.11111111 0.10000000 0.09090909 0.08333333
-[13] 0.07692308 0.07142857 0.06666667 0.06250000 0.05882353 0.05555556
-[19] 0.05263158 0.05000000 0.04761905 0.04545455 0.04347826 0.04166667
-[25] 0.04000000 0.03846154 0.03703704 0.03571429 0.03448276 0.03333333
-[31] 0.03225806 0.03125000 0.03030303 0.02941176 0.02857143 0.02777778
-[37] 0.02702703 0.02631579 0.02564103 0.02500000 0.02439024 0.02380952
-[43] 0.02325581 0.02272727 0.02222222 0.02173913 0.02127660 0.02083333
-[49] 0.02040816 0.02000000
+ [1] 0.0009990010 0.0009980040 0.0009970090 0.0009960159 0.0009950249
+ [6] 0.0009940358 0.0009930487 0.0009920635 0.0009910803 0.0009900990
+[11] 0.0009891197 0.0009881423 0.0009871668 0.0009861933 0.0009852217
+[16] 0.0009842520 0.0009832842 0.0009823183 0.0009813543 0.0009803922
+[21] 0.0009794319 0.0009784736 0.0009775171 0.0009765625 0.0009756098
+[26] 0.0009746589 0.0009737098 0.0009727626 0.0009718173 0.0009708738
+[31] 0.0009699321 0.0009689922 0.0009680542 0.0009671180 0.0009661836
+[36] 0.0009652510 0.0009643202 0.0009633911 0.0009624639 0.0009615385
+[41] 0.0009606148 0.0009596929 0.0009587728 0.0009578544 0.0009569378
+[46] 0.0009560229 0.0009551098 0.0009541985 0.0009532888 0.0009523810
 \end{verbatim}
 
 \begin{Shaded}
@@ -1636,14 +1637,14 @@ Objective Function vals
 \end{Shaded}
 
 \begin{verbatim}
- [1] 0.6931472 3.3224752 1.1757203 0.8951751 0.7049514 1.1566889 0.7740529
- [8] 0.8481838 0.5961463 0.4365674 0.4961555 0.5629517 0.6110768 0.6097521
-[15] 0.5525478 0.5041885 0.4843160 0.4767519 0.4881898 0.4940512 0.5001145
-[22] 0.5452203 0.5080727 0.5241516 0.4911822 0.5035805 0.5921574 0.4454085
-[29] 0.6098483 0.5116747 0.4614430 0.5215265 0.6431649 0.5169591 0.5203553
-[36] 0.4789210 0.4938642 0.4818634 0.5021117 0.5493111 0.4736630 0.6490636
-[43] 0.5836519 0.5319409 0.5918284 0.4718493 0.4914902 0.5303020 0.5701241
-[50] 0.4897690
+ [1] 0.6931472 0.6899505 0.6883899 0.6831475 0.6787769 0.6762963 0.6759592
+ [8] 0.6700340 0.6647162 0.6658464 0.6666402 0.6602883 0.6474681 0.6558720
+[15] 0.6591510 0.6485301 0.6458368 0.6404269 0.6463510 0.6531543 0.6455916
+[22] 0.6466601 0.6287876 0.6409876 0.6285182 0.6214071 0.6170738 0.6352378
+[29] 0.6218606 0.6279371 0.6307798 0.6123240 0.6188174 0.6289519 0.6282660
+[36] 0.6089209 0.6031430 0.6105668 0.5921086 0.6086099 0.5997608 0.6108823
+[43] 0.6157268 0.6083084 0.6080561 0.6068213 0.5982542 0.5983205 0.5795877
+[50] 0.6010424
 \end{verbatim}
 
 \subsubsection{(5) Stochastic gradient descent with AMSGrad-ADAM-W
@@ -1705,7 +1706,6 @@ algorithm shown previously, except multiplying (1 − ηλ) to \(x_k\):
 
   \CommentTok{\# Algorithm:}
   \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
-    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
     
     \CommentTok{\# subset of data}
 \NormalTok{    subset }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\NormalTok{n, s, }\AttributeTok{replace=}\ConstantTok{FALSE}\NormalTok{)}
@@ -1714,16 +1714,16 @@ algorithm shown previously, except multiplying (1 − ηλ) to \(x_k\):
     
     \CommentTok{\# ADAM step}
     \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) \{}
-\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad\_sub}
-\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad\_sub}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ grad\_sub}
+\NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ grad\_sub}\SpecialCharTok{\^{}}\DecValTok{2}
 \NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
-\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(}\DecValTok{0}\NormalTok{, z\_k)}
 \NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
 \NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
 \NormalTok{      m\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_1 }\SpecialCharTok{*}\NormalTok{ m\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1) }\SpecialCharTok{*}\NormalTok{ grad\_sub}
 \NormalTok{      z\_k }\OtherTok{\textless{}{-}}\NormalTok{ b\_2 }\SpecialCharTok{*}\NormalTok{ z\_k\_prev }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_2) }\SpecialCharTok{*}\NormalTok{ grad\_sub}\SpecialCharTok{\^{}}\DecValTok{2}
 \NormalTok{      m\_hat\_k }\OtherTok{\textless{}{-}}\NormalTok{ m\_k }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ b\_1}\SpecialCharTok{\^{}}\NormalTok{iter)}
-\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(z\_hat\_k\_prev, z\_k)}
+\NormalTok{      z\_hat\_k }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(z\_hat\_k\_prev, z\_k)}
 \NormalTok{      z\_tild\_k }\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\FunctionTok{sqrt}\NormalTok{(z\_hat\_k) }\SpecialCharTok{+}\NormalTok{ epsilon)}
 \NormalTok{    \}}
     
@@ -1747,6 +1747,7 @@ algorithm shown previously, except multiplying (1 − ηλ) to \(x_k\):
 \NormalTok{    z\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_k}
 \NormalTok{    m\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ m\_k}
 \NormalTok{    z\_hat\_k\_prev }\OtherTok{\textless{}{-}}\NormalTok{ z\_hat\_k}
+    \ControlFlowTok{if}\NormalTok{ (iter }\SpecialCharTok{==} \DecValTok{1} \SpecialCharTok{|}\NormalTok{ iter }\SpecialCharTok{\%\%} \DecValTok{1000} \SpecialCharTok{==} \DecValTok{0}\NormalTok{) }\FunctionTok{cat}\NormalTok{(}\StringTok{"iter"}\NormalTok{, iter, }\StringTok{"obj:"}\NormalTok{, obj\_sub, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
 \NormalTok{  \}}
   
   \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{beta =}\NormalTok{ beta, }\AttributeTok{obj\_values =}\NormalTok{ obj\_values, }\AttributeTok{eta\_values =}\NormalTok{ eta\_values, }\AttributeTok{beta\_values =}\NormalTok{ beta\_values))}
@@ -1758,21 +1759,12 @@ algorithm shown previously, except multiplying (1 − ηλ) to \(x_k\):
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{log\_reg\_sgd\_adam }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd\_adam}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}6}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{lambda =} \FloatTok{1e{-}4}\NormalTok{, }\AttributeTok{s =} \DecValTok{32}\NormalTok{, }\AttributeTok{eta =} \DecValTok{1}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
+\NormalTok{log\_reg\_sgd\_adam }\OtherTok{\textless{}{-}} \FunctionTok{log\_sgd\_adam}\NormalTok{(X, y, }\AttributeTok{tol =} \FloatTok{1e{-}2}\NormalTok{, }\AttributeTok{max\_iter =} \DecValTok{10000}\NormalTok{, }\AttributeTok{lambda =} \FloatTok{1e{-}4}\NormalTok{, }\AttributeTok{s =} \DecValTok{256}\NormalTok{, }\AttributeTok{eta =} \FloatTok{0.01}\NormalTok{, }\AttributeTok{epsilon =} \FloatTok{1e{-}8}\NormalTok{, }\AttributeTok{b\_1 =} \FloatTok{0.9}\NormalTok{, }\AttributeTok{b\_2 =} \FloatTok{0.999}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-iter obj: 12.06407 
-iter obj: 2.531643 
-iter obj: 5.737204 
-iter obj: 3.60273 
-iter obj: 1.100128 
-iter obj: 2.217027 
-iter obj: 5.417208 
-iter obj: 4.39512 
-iter obj: 2.842576 
-iter obj: 2.220743 
+iter 1 obj: 0.6931472 
 \end{verbatim}
 
 \textbf{PRINTING OUTPUT: SGD ADAM}
@@ -1794,107 +1786,107 @@ betas
 \end{Shaded}
 
 \begin{verbatim}
-               y
-X1   -3.26835781
-X2   -0.44347203
-X3    3.26305399
-X4    0.94087725
-X5   -1.18747337
-X6    1.48535302
-X7    1.84180957
-X8    1.77463298
-X9    0.41673067
-X10  -1.19771275
-X11   1.21756565
-X12  -1.41940829
-X13   0.52268082
-X14  -1.97801057
-X15  -0.95729656
-X16   2.02827330
-X17   0.14700776
-X18   0.97803255
-X19  -0.84171785
-X20   0.67821527
-X21   0.09830971
-X22  -4.00163941
-X23  -1.17336298
-X24  -0.76923237
-X25  -0.62323199
-X26  -0.18242502
-X27  -3.92574861
-X28   0.79151178
-X29   0.76415956
-X30   0.29982800
-X31   1.04701580
-X32  -1.11262368
-X33   2.41667412
-X34   1.63027579
-X35   0.32333089
-X36  -0.19400756
-X37   1.36746172
-X38   3.79827704
-X39   0.67324011
-X40   2.06559579
-X41   0.92588667
-X42  -0.95686149
-X43  -0.83831018
-X44   0.85262437
-X45   0.79173351
-X46  -2.37482144
-X47   0.24220381
-X48   2.55728469
-X49  -2.54975580
-X50   0.26767449
-X51  -0.39598156
-X52  -1.71712350
-X53  -0.75483463
-X54   0.54904300
-X55   0.43459976
-X56  -1.44002390
-X57   0.62120236
-X58   0.31331999
-X59   0.75910558
-X60  -2.79707509
-X61   0.05223149
-X62  -0.39382081
-X63  -1.00469254
-X64   0.18428308
-X65   1.03402005
-X66  -0.39573095
-X67  -0.59921503
-X68   0.03854199
-X69  -0.13969101
-X70   2.57773168
-X71   1.05802705
-X72  -0.36663329
-X73  -0.52748695
-X74  -0.47003475
-X75   1.22959112
-X76   0.37289865
-X77   1.06049289
-X78  -1.53892119
-X79   1.11644354
-X80   0.07809200
-X81   0.87913100
-X82  -0.43623013
-X83   0.24923502
-X84   0.12628232
-X85  -1.68112051
-X86   1.22133905
-X87   0.45633608
-X88  -2.59868351
-X89  -0.26967113
-X90  -0.83240432
-X91  -1.55681440
-X92  -2.65887137
-X93   0.43522903
-X94   0.10414063
-X95   1.04254112
-X96  -1.35318743
-X97   0.31668937
-X98   0.60360257
-X99  -1.69507364
-X100  1.63596965
+                 y
+X1   -0.0846350487
+X2   -0.0124010853
+X3    0.0555628769
+X4    0.0742999680
+X5   -0.1182542697
+X6    0.0558628759
+X7    0.0293496739
+X8    0.0442484052
+X9    0.0077119300
+X10  -0.1268388865
+X11   0.0614244487
+X12  -0.0745620848
+X13  -0.0235281602
+X14  -0.1118354964
+X15  -0.0022481179
+X16   0.0362880146
+X17   0.0276927003
+X18   0.0557341451
+X19   0.0739836170
+X20  -0.0447301030
+X21   0.0528074479
+X22   0.0162599817
+X23  -0.0162785676
+X24  -0.0954133547
+X25  -0.0373110853
+X26   0.0209924010
+X27  -0.3112053982
+X28   0.1055346118
+X29   0.0190964421
+X30  -0.0111074973
+X31  -0.0812639465
+X32   0.0674209252
+X33   0.0778018010
+X34   0.0110840244
+X35   0.0474483632
+X36   0.0766899453
+X37   0.0889207977
+X38   0.0569115340
+X39   0.0059694992
+X40   0.1064577032
+X41   0.0848035758
+X42  -0.0424669410
+X43   0.0257388739
+X44  -0.0567801372
+X45  -0.0124715608
+X46  -0.0189873300
+X47  -0.0364654703
+X48   0.0326952708
+X49   0.0636014370
+X50   0.0771965519
+X51  -0.0197872936
+X52  -0.1040558501
+X53   0.0970089486
+X54   0.0694368456
+X55   0.0137015556
+X56  -0.0155630584
+X57  -0.0480951127
+X58  -0.0892051386
+X59   0.0719298726
+X60  -0.1548228608
+X61   0.0594450153
+X62   0.0561337620
+X63   0.0139001100
+X64  -0.0551283259
+X65  -0.0031146087
+X66  -0.0620627266
+X67  -0.0134451155
+X68   0.0659925789
+X69  -0.0828161146
+X70   0.0671992452
+X71   0.0634629106
+X72   0.0064634833
+X73  -0.0005192438
+X74   0.0131385659
+X75   0.0810782316
+X76  -0.0357127540
+X77   0.0109596326
+X78  -0.0167523194
+X79   0.0785550751
+X80   0.0392163700
+X81  -0.0466329074
+X82  -0.0254647907
+X83   0.0246743763
+X84   0.0541367949
+X85   0.0715176982
+X86   0.0414844249
+X87   0.0262101744
+X88   0.0024564074
+X89   0.0440199118
+X90   0.0390924919
+X91  -0.0161686477
+X92  -0.0050758005
+X93  -0.0229872255
+X94  -0.0205879448
+X95   0.0117065290
+X96   0.0255148540
+X97   0.0730530351
+X98   0.0605628370
+X99  -0.0051534570
+X100  0.1013927258
 \end{verbatim}
 
 \begin{Shaded}
@@ -1904,7 +1896,7 @@ X100  1.63596965
 \end{Shaded}
 
 \begin{verbatim}
-The function converged after 10000  iterations 
+The function converged after 56  iterations 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1924,8 +1916,10 @@ Eta Vals:
 \end{Shaded}
 
 \begin{verbatim}
- [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[39] 1 1 1 1 1 1 1 1 1 1 1 1
+ [1] 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
+[16] 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
+[31] 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
+[46] 0.01 0.01 0.01 0.01 0.01
 \end{verbatim}
 
 \begin{Shaded}
@@ -1945,13 +1939,14 @@ Objective Function vals
 \end{Shaded}
 
 \begin{verbatim}
- [1]      Inf      Inf      Inf      Inf      Inf 28.34960      Inf      Inf
- [9] 31.88056      Inf      Inf      Inf      Inf      Inf      Inf      Inf
-[17]      Inf      Inf      Inf 29.73365 55.06724 49.79323 30.45774 28.42583
-[25]      Inf      Inf      Inf      Inf      Inf      Inf      Inf      Inf
-[33]      Inf 28.07532 24.99386 25.21001 30.87866 30.00103 24.65384 22.25406
-[41] 23.06119 23.73060 22.43201 21.15671 20.21419 19.86670 18.91779 18.97949
-[49] 22.15657 21.18867
+ [1] 1.1161821 1.5373292 1.7827117 1.9423441 2.0494091 2.1201949 2.1661810
+ [8] 2.1935314 2.2075204 2.2104329 2.2073275 2.1962513 2.1773307 2.1519954
+[15] 2.1225932 2.0865053 2.0473293 2.0041901 1.9596392 1.9137775 1.8661258
+[22] 1.8168482 1.7661386 1.7150601 1.6605808 1.6051586 1.5493324 1.4939364
+[29] 1.4369382 1.3794203 1.3210101 1.2625243 1.2055373 1.1491443 1.0926230
+[36] 1.0387216 0.9847929 0.9325850 0.8810229 0.8313522 0.7844547 0.7385439
+[43] 0.6958187 0.6554445 0.6203532 0.5901666 0.5655170 0.5468710 0.5350448
+[50] 0.5304285
 \end{verbatim}
 
 \subsection{Part (a) Hyperparameter
@@ -1962,36 +1957,115 @@ algorithms
 
 For BLS, I selected tau and epsilon = 0.5, because they should be
 between 0 and 1 and 0.5 is relatively standard in order for it to
-converge
+converge. That is fairly standard for the Armijo condition.
 
 For BLS with Nesterov, I kept the hyperparameters the same as BLS
-because it was standard from before
+because it was standard from before, and then decided to set tau = 0.8
+to keep the step size bigger and with faster convergence. The
+convergence was the same, likely the momentum not making a huge
+difference with this particular objective function
 
-For gradient descent with backtracking, I selected epsilon = 0.5 because
-that is fairly standard in the Armijo condition
-
-For SGD, The decreasing step size implemented was eta / number of
-iterations, ensuring that eta decreases with every iteration, as it is
-also a common algorithm used in literature to decrease eta
+For SGD, The decreasing step size implemented was eta\_k = eta / (1 +
+0.001 * iter), ensuring that eta decreases with every iteration, as it
+is also a common algorithm used in literature to decrease eta. The
+multiplier 0.001 means that eta won't significantly drop after 1000
+iterations, otherwise eta would get too small. I also set eta = 0.001
+initially, otherwise it would not converge.
 
 For AMSGRAD-ADAM, I selected Beta1 = 0.9 and Beta2 = 0.999, In order
 that Beta1 and Beta2 to not be to o small, and it is also a common step
-size that is used in
+size eta = 1 that is used in ADAM. The step size allowed it to converge
+aggressively with few iterations
 
-For AMSGRAD-ADAM-W, I selected the same coefficients as AMSGRAD, it's
-just that I selected lambda to be a very small value \textasciitilde1e-4
+For AMSGRAD-ADAM-W with SGD, I selected the same coefficients as
+AMSGRAD, it's just that I selected lambda to be a very small value
+\textasciitilde1e-4, I had to keep the step size and tolerance
 
 \subsection{Part (b) Metrics}\label{part-b-metrics}
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{g }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ data, }\AttributeTok{family =} \FunctionTok{binomial}\NormalTok{())}
+\NormalTok{coefs }\OtherTok{\textless{}{-}}\NormalTok{ g}\SpecialCharTok{$}\NormalTok{coefficients[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{101}\NormalTok{]}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((log\_reg\_bls}\SpecialCharTok{$}\NormalTok{beta }\SpecialCharTok{{-}}\NormalTok{ coefs)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)))}
 \end{Highlighting}
 \end{Shaded}
 
-For the algorithm BLS, BLS\_N, ADAM, SGD, SGD\_ADAM\_W
+\begin{verbatim}
+[1] 0.003482767
+\end{verbatim}
 
-The iterations took 1909, 1909, 275, 10000, and 10000 respectively
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((log\_reg\_bls\_n}\SpecialCharTok{$}\NormalTok{beta }\SpecialCharTok{{-}}\NormalTok{ coefs)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.00348093
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((log\_reg\_adam}\SpecialCharTok{$}\NormalTok{beta }\SpecialCharTok{{-}}\NormalTok{ coefs)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.003482475
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((log\_reg\_sgd}\SpecialCharTok{$}\NormalTok{beta }\SpecialCharTok{{-}}\NormalTok{ coefs)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.915068
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((log\_reg\_sgd\_adam}\SpecialCharTok{$}\NormalTok{beta }\SpecialCharTok{{-}}\NormalTok{ coefs)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.7681599
+\end{verbatim}
+
+For the algorithm BLS, BLS\_N, AMS\_ADAM, SGD, SGD\_AMS\_ADAM\_W
+
+The estimation errors were: {[}1{]} 0.003482767, {[}1{]} 0.00348093,
+{[}1{]} 0.003482475, {[}1{]} 0.915068, {[}1{]} 0.6947875
+
+The iterations took 1909, 1909, 275, 769, and 56 respectively
+
+Formatted Table:
+
+\begin{longtable}[]{@{}lrr@{}}
+\toprule\noalign{}
+Algorithm & Estimation Error & Iterations \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+BLS & 0.003482767 & 1909 \\
+BLS\_N & 0.00348093 & 1909 \\
+AMS\_ADAM & 0.003482475 & 275 \\
+SGD & 0.915068 & 769 \\
+SGD\_AMS\_ADAM\_W & 0.6947875 & 56 \\
+\end{longtable}
+
+I see that ADAM performed very well in reducing the iterations for
+converging, and we can see that all the models perform relatively well
+in terms of estimation error. I would definitely use ADAM if I was going
+to perform gradient descent in the future. For stochastic gradient
+descent, it is likely that the tolerance needs to increase, hence the
+estimation error also needs to increase a lot. However, the benefit is
+that the function converges in less iterations, the example being
+stochastic gradient descent with AMSGRAD-ADAM-W
 
 
 

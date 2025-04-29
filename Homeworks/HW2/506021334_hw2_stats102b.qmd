@@ -23,6 +23,7 @@ Reading the dataset:
 ```{r read}
 data <- read_csv("dataset-logistic-regression.csv")
 head(data, n = 25)
+set.seed(777)
 ```
 
 Our data set has 10000 observations, 1 binary outcome variable y, and 100 predictor variables X1-X100
@@ -597,7 +598,7 @@ log_sgd <- function(X, y, tol = 1e-6, max_iter = 10000, s = 32, eta = 1) {
 
 **TESTING: SGD(No ADAM)**
 ```{r}
-log_reg_sgd <- log_sgd(X, y, tol = 1e-5, max_iter = 10000, s = 256, eta = 0.001)
+log_reg_sgd <- log_sgd(X, y, tol = 1e-4, max_iter = 10000, s = 256, eta = 0.001)
 ```
 **PRINTING OUTPUT**
 ```{r}
@@ -714,7 +715,7 @@ log_sgd_adam <- function(X, y, tol = 1e-6, max_iter = 10000, lambda = 1e-4, s = 
 
 **TESTING: SGD ADAM**
 ```{r}
-log_reg_sgd_adam <- log_sgd_adam(X, y, tol = 1e-4, max_iter = 10000, lambda = 1e-4, s = 256, eta = 0.01, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999)
+log_reg_sgd_adam <- log_sgd_adam(X, y, tol = 1e-2, max_iter = 10000, lambda = 1e-4, s = 256, eta = 0.01, epsilon = 1e-8, b_1 = 0.9, b_2 = 0.999)
 ```
 **PRINTING OUTPUT: SGD ADAM**
 ```{r}
@@ -755,12 +756,21 @@ print(sqrt(sum((log_reg_sgd_adam$beta - coefs)^2)))
 ```
 
 
-For the algorithm BLS, BLS_N, ADAM, SGD, SGD_ADAM_W
+For the algorithm BLS, BLS_N, AMS_ADAM, SGD, SGD_AMS_ADAM_W
 
-The estimation errors were:
+The estimation errors were: [1] 0.003482767, [1] 0.00348093, [1] 0.003482475, [1] 0.915068, [1] 0.6947875
 
-The iterations took 1909, 1909, 275, 769, and 10000 respectively
+The iterations took 1909, 1909, 275, 769, and 56 respectively
 
-Table:
+Formatted Table:
 
-I see that ADAM performed very well in reducing the iterations for converging, and we can see that all the models perform relatively well in terms of estimation error. I would definitely use ADAM if I was going to perform gradient descent in the future. For stochastic gradient descent, it is likely that the tolerance needs to increase, hence the estimation error also needs to increase slightly.
+| Algorithm         | Estimation Error | Iterations |
+|:------------------|-----------------:|-----------:|
+| BLS               | 0.003482767       | 1909       |
+| BLS_N             | 0.00348093        | 1909       |
+| AMS_ADAM          | 0.003482475       | 275        |
+| SGD               | 0.915068           | 769        |
+| SGD_AMS_ADAM_W    | 0.6947875          | 56         |
+
+
+I see that ADAM performed very well in reducing the iterations for converging, and we can see that all the models perform relatively well in terms of estimation error. I would definitely use ADAM if I was going to perform gradient descent in the future. For stochastic gradient descent, it is likely that the tolerance needs to increase, hence the estimation error also needs to increase a lot. However, the benefit is that the function converges in less iterations, the example being stochastic gradient descent with AMSGRAD-ADAM-W

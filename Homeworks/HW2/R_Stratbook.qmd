@@ -1,0 +1,13 @@
+---
+title: "R Coding Stratbook"
+format: pdf
+---
+
+
+### Matrix Operations
+
+| Operation | In R | Example |
+|:----------|:----|:--------|
+| Matrix multiplication | `%*%` | `X %*% beta` |
+| Transpose | `t()` | `t(X)` |
+| Elementwise addition/multiplication/exponentiation | Just use `+`, `*`, `exp()`, `log()`, etc. | `exp(Xbeta)`, `X + 1` |

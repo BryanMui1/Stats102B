@@ -52,12 +52,19 @@ $$
 and the equation for $f_i(\beta)$:
 
 $$
-f_i(\beta) = -y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))
+f_i(\beta) = -y_i(x_i^{\mathsf{T}}\beta) + log(1 + exp(x_i^{\mathsf{T}} \beta))
 $$
 For the objective function, we get:
 
 $$
-\boxed{f(\beta) = \frac{1}{m} \sum_{i=1}^{m} [-y_i(x^\intercal\beta) + log(1 + exp(x_i^\intercal \beta))]}
+f(\beta) = \frac{1}{m} \sum_{i=1}^{m} [-y_i(x_i^{\mathsf{T}}\beta) + log(1 + exp(x_i^{\mathsf{T}} \beta))]
+$$
+
+
+We can matricize the objective function to
+
+$$
+\boxed{f(\beta) = \frac{1}{m}[-y^{\mathsf{T}}(X\beta) + \mathbf{1}^{\mathsf{T}}log(1 + exp(X\beta))]}
 $$
 
 We also have the gradient function:
@@ -69,18 +76,24 @@ $$
 and
 
 $$
-\nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i
+\nabla_\beta f_i(\beta) = [\sigma(x_i^{\mathsf{T}} \beta) - y_i] \cdot x_i
 $$
 where $\sigma(z) = \frac{1}{1+exp(-z)}$ as the logistic sigmoid function, therefore:
 
 $$
 \begin{aligned}
-\nabla f(x) &= \frac{1}{m} \sum_{i=1}^m \nabla f_i(x), \; \nabla_\beta f_i(\beta) = [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i \\
-\nabla f(\beta) &= \boxed{{\frac{1}{m} \sum_{i=1}^m [\sigma(x_i^\intercal \beta) - y_i] \cdot x_i}}
+\nabla f(x) &= \frac{1}{m} \sum_{i=1}^m \nabla f_i(x), \; \nabla_\beta f_i(\beta) = [\sigma(x_i^{\mathsf{T}} \beta) - y_i] \cdot x_i \\
+\nabla f(\beta) &= {\frac{1}{m} \sum_{i=1}^m [\sigma(x_i^{\mathsf{T}} \beta) - y_i] \cdot x_i}
 \end{aligned}
 $$
 
-Therefore our gradient descent update step is:
+And we can also matricize this:
+
+$$
+\boxed{\nabla f(\beta) = \frac{1}{m} X^{\mathsf{T}}[\sigma(X\beta) - y], \quad \sigma(z) = \frac{1}{1+exp(-z)}}
+$$
+
+Therefore our gradient descent update step is(for constant step size):
 
 $$
 \boxed {\beta_{k+1} = \beta_k - \eta \nabla f(\beta_k)}
@@ -115,57 +128,69 @@ Repeat:
 
 Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ tol$ (change in parameters is small)
 
+**Implement BLS**
 ```{r grad-bls}
 # logistic gradient descent w/ bls
-log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, epsilon = 0.5, tau = 0.5) {
+log_bls <- function(X, y, tol = 1e-6, max_iter = 10000, epsilon = 0.5, tau = 0.5) {
   # Initialize
   n <- nrow(X)
   p <- ncol(X)
-  beta <- rep(0, p)
+  x <- as.matrix(X)
+  y <- as.matrix(y)
+  beta <- as.matrix(rep(0, p))
   obj_values <- numeric(max_iter)
   eta_values <- numeric(max_iter)  # To store eta values used each iteration
   beta_values <- list() # To store beta values used each iteration
   eta_bt <- 1  # Initial step size for backtracking
   
   # Objective function: negative log-likelihood
-  obj_function <- function(beta) {
-    #sum((X %*% beta - y)^2) / (2 * n)
+  # input: Beta vector, x matrix, y matrix
+  # output: scalar objective func value
+  # comments: We want to minimize this function for logit regression
+  obj_function <- function(beta, x, y) {
+    m <- nrow(x)
+    z <- x %*% beta
+    (1 / m) * (-(t(y) %*% z) + sum(log(1 + exp(z))))
   }
   
   # Gradient function
-  gradient <- function(beta) {
-    #t(X) %*% (X %*% beta - y) / n
+  # input: Beta vector, x matrix, y matrix
+  # output: gradient vector in the dimension of nrow(Beta) x 1
+  # comments: We use this for gradient descent
+  gradient <- function(beta, x, y) {
+    m <- nrow(x)                       # define m
+    sig <- function(z) 1 / (1 + exp(-z))  # sigmoid function
+    (1 / m) * (t(x) %*% (sig(x %*% beta) - y))
   }
 
   # Algorithm:
   for (iter in 1:max_iter) {
-    grad <- gradient(beta)
-    beta_values[[iter]] <- beta
+    grad <- gradient(beta, x, y)
+    
+    #cat("iter ", iter, "\n")
     
     # backtracking step
-    if (iter == 1) {
-      eta_bt <- 1 # Reset only in the first iteration
-      y_k <- beta
-    }
-    else {
-      beta_prev <- beta_values[[iter - 1]]
-      y_k <- beta + xi * (beta - beta_prev)
-    }
-    beta_new <- y_k - eta_bt * grad
+    current_obj <- obj_function(beta, x, y)
+    grad_norm_sq <- sum(grad^2)
     
-    while (obj_function(beta_new) > obj_function(beta) - epsilon * eta_bt * sum(grad^2)) {
+    beta_new <- beta - eta_bt * grad
+    
+    while (obj_function(beta_new, x, y) > current_obj - epsilon * eta_bt * grad_norm_sq) {
       eta_bt <- tau * eta_bt
       beta_new <- beta - eta_bt * grad
     }
-    eta_used <- eta_bt
     
-    eta_values[iter] <- eta_used
-    
-    obj_values[iter] <- obj_function(beta_new)
+    # save values to the matrix
+    eta_values[iter] <- eta_bt
+    obj_values[iter] <- obj_function(beta_new, x, y)
+    beta_values[[iter]] <- beta_new
     
     if (sqrt(sum((beta_new - beta)^2)) < tol) {
+      # set the vector ranges and break
+      beta <- beta_new
       obj_values <- obj_values[1:iter]
       eta_values <- eta_values[1:iter]
+      beta_values <- beta_values[1:iter]
       break
     }
     
@@ -176,11 +201,64 @@ log_bls <- function(X, y, eta = NULL, tol = 1e-6, max_iter = 10000, xi = 0.5, ep
 }
 ```
 
+**TESTING: BLS**
+```{r testing-bls}
+log_reg_bls <- log_bls(X, y, tol=1e-6, max_iter=10000, epsilon=0.5, tau=0.5)
+```
+
+```{r}
+cat("betas \n")
+print(log_reg_bls$beta)
+cat("The function converged after", length(log_reg_bls$obj_values), " iterations \n")
+cat("Eta Vals: \n")
+print(log_reg_bls$eta_values[1:50])
+cat("Objective Function vals \n")
+print(log_reg_bls$obj_values[1:50])
+```
 
 
 ### (2) Gradient descent with backtracking line search and Nesterov momentum
 
-Nesterov is simply BLS with a special way to select the momentum $\epsilon$
+Nesterov is simply BLS with a special way to select the momentum $\xi$,  
+
+We set $\xi$ to:
+
+$$
+\frac{k-1}{k+2}
+$$
+
+where k is the iteration index
+
+Algorithm(Nesterov Momentum with BLS)
+
+Params:
+
+  * Set $η^0 > 0$(usually a large value ~1), 
+  * Set $η_1 = η^0$ 
+  * Set $ϵ ∈ (0,1), τ ∈ (0,1)$, where $ϵ$ and $τ$ are used to modify step size
+  
+Repeat:
+
+  * At iteration k, set $η_k <- η_{k-1}$, update with 
+  
+$$
+\boxed{x_{k+1} = y_k - \eta_k \nabla (f(y_k)), \quad y_k = x_k + \xi(x_k - x_{k-1}), \quad \xi = \frac{k-1}{k+2}}
+$$
+  
+  * Check the next setting of $\eta$:
+    1. Check whether the Armijo Condition holds: 
+  
+    $$
+    h(η_k) ≤ h(0) + ϵη_kh'(0)
+    $$  
+    where $h(η_k) = f(x_k) − η_k ∇f(x_k)$,  
+    and $h(0) = f(x_k)$,  
+    and $h'(0) = -||\nabla (x_k)||^2$  
+    2. 
+      + If yes(condition holds), terminate and keep $η_k$
+      + If no, set $η_k = τη_k$ and go to Step 1
+
+Stopping criteria: Stop if $||x_k - x_{k+1}|| ≤ tol$ (change in parameters is small)
 
 
 ### (3) Gradient descent with AMSGrad-ADAM momentum
@@ -191,6 +269,8 @@ Nesterov is simply BLS with a special way to select the momentum $\epsilon$
 
 ### (5) Stochastic gradient descent with AMSGrad-ADAM-W momentum 
 
-## Part (a)
+(no backtracking line search, since AMSGrad-ADAM adjusts step sizes per parameter using momentum and adaptive scaling)
 
-## Part (b)
+## Part (a) Hyperparameter Discussion
+
+## Part (b) Metrics

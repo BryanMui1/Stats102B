@@ -1,0 +1,337 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\usepackage{fvextra}
+\usepackage{amssymb}
+\usepackage{unicode-math}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+\DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Exam 1 Prep(Stats102B)},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{Exam 1 Prep(Stats102B)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+
+\section{Derivative Rules:}\label{derivative-rules}
+
+\subsection{📘 Basic Derivative Rules}\label{basic-derivative-rules}
+
+\begin{itemize}
+\item
+  \textbf{Constant Rule}\\
+  \[
+  \frac{d}{dx}[c] = 0
+  \]
+\item
+  \textbf{Power Rule}\\
+  \[
+  \frac{d}{dx}[x^n] = nx^{n-1} \quad \text{for any real } n
+  \]
+\item
+  \textbf{Constant Multiple Rule}\\
+  \[
+  \frac{d}{dx}[c \cdot f(x)] = c \cdot \frac{d}{dx}[f(x)]
+  \]
+\item
+  \textbf{Sum and Difference Rule}\\
+  \[
+  \frac{d}{dx}[f(x) \pm g(x)] = \frac{d}{dx}[f(x)] \pm \frac{d}{dx}[g(x)]
+  \]
+\item
+  \textbf{Product Rule}\\
+  \[
+  \frac{d}{dx}[f(x) \cdot g(x)] = f'(x)g(x) + f(x)g'(x)
+  \]
+\item
+  \textbf{Quotient Rule}\\
+  \[
+  \frac{d}{dx}\left[\frac{f(x)}{g(x)}\right] = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2}
+  \]
+\end{itemize}
+
+\subsection{🔁 Chain Rule}\label{chain-rule}
+
+If \(y = f(g(x))\), then:
+
+\[
+\frac{dy}{dx} = f'(g(x)) \cdot g'(x)
+\]
+
+\subsection{📈 Common Function
+Derivatives}\label{common-function-derivatives}
+
+\begin{itemize}
+\item
+  \textbf{Exponential Functions}\\
+  \[
+  \frac{d}{dx}[e^x] = e^x
+  \] \[
+  \frac{d}{dx}[e^{u(x)}] = e^{u(x)} \cdot u'(x)
+  \]
+\item
+  \textbf{Logarithmic Functions}\\
+  \[
+  \frac{d}{dx}[\ln x] = \frac{1}{x}
+  \] \[
+  \frac{d}{dx}[\ln(u(x))] = \frac{u'(x)}{u(x)}
+  \]
+\end{itemize}
+
+\begin{quote}
+\emph{Note: Trigonometric derivatives like \(\sin\) and \(\cos\) are not
+required.}
+\end{quote}
+
+\subsection{🧠 Example: Chain Rule}\label{example-chain-rule}
+
+Let \(f(x) = \ln(3x^2 + 1)\)
+
+Then: \[
+f'(x) = \frac{d}{dx}[\ln(3x^2 + 1)] = \frac{6x}{3x^2 + 1}
+\]
+
+\section{Practice Exam 1 - FRQs}\label{practice-exam-1---frqs}
+
+\subsection{Problem 1}\label{problem-1}
+
+Let \(f(x) = x - log(x)\),\\
+where log(.) donates the natural log base algorithm
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Show that f(x) has a unique global min. Justify your answer
+\end{enumerate}
+
+Find \(f(x), f'(x), f''(x)\), set \(f'(x) = 0\) to get the critical
+points, if we can show that \(f'(x) = 0\) has only one critical point,
+and that \(f''(x)\) is concave up at that point, then that will be the
+unique global min
+
+\[
+\begin{aligned}
+f(x) &= x - \ln(x) \\
+f'(x) &= 1 - \frac{1}{x} \\
+0 &= 1 - \frac{1}{x} \\
+\frac{1}{x} &= 1 \\
+x &= 1 \\
+f''(x) &= \frac{1}{x^2} \\
+f''(1) &= 1
+\end{aligned}
+\]
+
+Because \(f(x)\) has one critical point at \(x=1\), and the second
+derivative is positive, the function is concave up, meaning that
+\(f(x)\) has a unique global minimum at that point.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\item
+  Let \(x_0 = 2\) be the initial point used in the gradient descent
+  algorithm. What will \(x_1\) be based on the gradient descent
+  algorithm, if the step size is set to \(η = 0.5\)?
+\item
+  Derive the range of values for the step size parameter \(η\), so that
+  gradient descent is convergent? Justify your answer.
+\item
+  Suppose that somebody that does not know how to derive the range of
+  eligible step sizes \(η\), decided to use an initial \(η = 2\) for
+  initial point \(x_0 = 2\). Explain what calculations the backtracking
+  line search algorithm will check to select and appropriate step size
+  \(η_0\) to proceed calculating the next update \(x_1\).
+\end{enumerate}
+
+\section{Practice Exam 1 - MCQs}\label{practice-exam-1---mcqs}
+
+\subsection{Question 1: Which direction does the gradient descent
+algorithm move in each
+iter-ation?}\label{question-1-which-direction-does-the-gradient-descent-algorithm-move-in-each-iter-ation}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\Box\) Random direction
+\item
+  \(\Box\) Direction of the gradient
+\item
+  \checkbox{1} Opposite to the gradient
+\item
+  \(\Box\) Along the eigenvectors of the Hessian
+\end{itemize}
+
+\subsection{Question 2: If the step size (learning rate) for the
+optimization problem of a statistical model is too large, gradient
+descent
+can:}\label{question-2-if-the-step-size-learning-rate-for-the-optimization-problem-of-a-statistical-model-is-too-large-gradient-descent-can}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\Box\) Converge slowly
+\item
+  \(\Box\) Not converge
+\item
+  \(\Box\) Overfit the data
+\item
+  \(\Box\) Always converge faster
+\end{itemize}
+
+
+
+
+\end{document}

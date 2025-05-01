@@ -1,0 +1,133 @@
+---
+title: "Exam 1 Prep(Stats102B)"
+format: 
+  pdf:
+    latex-engine: pdflatex
+    keep-tex: true
+    include-in-header: 
+       text: |
+         \usepackage{fvextra}
+         \usepackage{amssymb}
+         \usepackage{unicode-math}
+         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+         \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+# Derivative Rules:
+
+## 📘 Basic Derivative Rules
+
+- **Constant Rule**  
+  $$
+  \frac{d}{dx}[c] = 0
+  $$
+
+- **Power Rule**  
+  $$
+  \frac{d}{dx}[x^n] = nx^{n-1} \quad \text{for any real } n
+  $$
+
+- **Constant Multiple Rule**  
+  $$
+  \frac{d}{dx}[c \cdot f(x)] = c \cdot \frac{d}{dx}[f(x)]
+  $$
+
+- **Sum and Difference Rule**  
+  $$
+  \frac{d}{dx}[f(x) \pm g(x)] = \frac{d}{dx}[f(x)] \pm \frac{d}{dx}[g(x)]
+  $$
+
+- **Product Rule**  
+  $$
+  \frac{d}{dx}[f(x) \cdot g(x)] = f'(x)g(x) + f(x)g'(x)
+  $$
+
+- **Quotient Rule**  
+  $$
+  \frac{d}{dx}\left[\frac{f(x)}{g(x)}\right] = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2}
+  $$
+
+## 🔁 Chain Rule
+
+If $y = f(g(x))$, then:
+
+$$
+\frac{dy}{dx} = f'(g(x)) \cdot g'(x)
+$$
+
+## 📈 Common Function Derivatives
+
+- **Exponential Functions**  
+  $$
+  \frac{d}{dx}[e^x] = e^x
+  $$
+  $$
+  \frac{d}{dx}[e^{u(x)}] = e^{u(x)} \cdot u'(x)
+  $$
+
+- **Logarithmic Functions**  
+  $$
+  \frac{d}{dx}[\ln x] = \frac{1}{x}
+  $$
+  $$
+  \frac{d}{dx}[\ln(u(x))] = \frac{u'(x)}{u(x)}
+  $$
+
+> _Note: Trigonometric derivatives like $\sin$ and $\cos$ are not required._
+
+## 🧠 Example: Chain Rule
+
+Let $f(x) = \ln(3x^2 + 1)$
+
+Then:
+$$
+f'(x) = \frac{d}{dx}[\ln(3x^2 + 1)] = \frac{6x}{3x^2 + 1}
+$$
+
+# Practice Exam 1 - FRQs
+
+## Problem 1
+
+Let $f(x) = x - log(x)$,  
+where log(.) donates the natural log base algorithm
+
+1. Show that f(x) has a unique global min. Justify your answer
+
+Find $f(x), f'(x), f''(x)$, set $f'(x) = 0$ to get the critical points, if we can show that $f'(x) = 0$ has only one critical point, and that $f''(x)$ is concave up at that point, then that will be the unique global min
+
+$$
+\begin{aligned}
+f(x) &= x - \ln(x) \\
+f'(x) &= 1 - \frac{1}{x} \\
+0 &= 1 - \frac{1}{x} \\
+\frac{1}{x} &= 1 \\
+x &= 1 \\
+f''(x) &= \frac{1}{x^2} \\
+f''(1) &= 1
+\end{aligned}
+$$
+
+Because $f(x)$ has one critical point at $x=1$, and the second derivative is positive, the function is concave up, meaning that $f(x)$ has a unique global minimum at that point. 
+
+2. Let $x_0 = 2$ be the initial point used in the gradient descent algorithm. What will $x_1$ be based on the gradient descent algorithm, if the step size is set to $η = 0.5$?
+
+3. Derive the range of values for the step size parameter $η$, so that gradient descent is convergent? Justify your answer.
+
+4. Suppose that somebody that does not know how to derive the range of eligible step sizes $η$, decided to use an initial $η = 2$ for initial point $x_0 = 2$. Explain what calculations the backtracking line search algorithm will check to select and appropriate step size $η_0$ to proceed calculating the next update $x_1$.
+
+
+# Practice Exam 1 - MCQs
+
+## Question 1: Which direction does the gradient descent algorithm move in each iter-ation?
+
+- $\Box$ Random direction
+- $\Box$ Direction of the gradient
+- \checkbox{1} Opposite to the gradient
+- $\Box$ Along the eigenvectors of the Hessian
+
+## Question 2: If the step size (learning rate) for the optimization problem of a statistical model is too large, gradient descent can:
+
+- $\Box$ Converge slowly
+- $\Box$ Not converge
+- $\Box$ Overfit the data
+- $\Box$ Always converge faster

@@ -2,20 +2,12 @@
 title: "Exam 1 Prep(Stats102B)"
 format: 
   pdf:
-    latex-engine: pdflatex
-    keep-tex: true
-    include-in-header: 
-       text: |
-         \usepackage{fvextra}
-         \usepackage{amssymb}
-         \usepackage{unicode-math}
-         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
-         \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+     pdf-engine: xelatex
 ---
 
 # Derivative Rules:
 
-## 📘 Basic Derivative Rules
+## Basic Derivative Rules
 
 - **Constant Rule**  
   $$
@@ -47,7 +39,7 @@ format:
   \frac{d}{dx}\left[\frac{f(x)}{g(x)}\right] = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2}
   $$
 
-## 🔁 Chain Rule
+## Chain Rule
 
 If $y = f(g(x))$, then:
 
@@ -55,7 +47,7 @@ $$
 \frac{dy}{dx} = f'(g(x)) \cdot g'(x)
 $$
 
-## 📈 Common Function Derivatives
+## Common Function Derivatives
 
 - **Exponential Functions**  
   $$
@@ -75,7 +67,7 @@ $$
 
 > _Note: Trigonometric derivatives like $\sin$ and $\cos$ are not required._
 
-## 🧠 Example: Chain Rule
+## Example: Chain Rule
 
 Let $f(x) = \ln(3x^2 + 1)$
 
@@ -120,14 +112,64 @@ Because $f(x)$ has one critical point at $x=1$, and the second derivative is pos
 
 ## Question 1: Which direction does the gradient descent algorithm move in each iter-ation?
 
-- $\Box$ Random direction
-- $\Box$ Direction of the gradient
-- \checkbox{1} Opposite to the gradient
-- $\Box$ Along the eigenvectors of the Hessian
+- Random direction
+- Direction of the gradient
+- **Opposite to the gradient**
+- Along the eigenvectors of the Hessian
 
 ## Question 2: If the step size (learning rate) for the optimization problem of a statistical model is too large, gradient descent can:
 
-- $\Box$ Converge slowly
-- $\Box$ Not converge
-- $\Box$ Overfit the data
-- $\Box$ Always converge faster
+- Converge slowly
+- **Not converge**
+- Overfit the data
+- Always converge faster
+
+## Question 3: In the context of gradient descent, a ”step size schedule” is used to:
+
+- Randomly choose learning rates
+- Ensure faster convergence
+- **Decrease learning rate over time**
+- Increase gradient magnitude
+
+## Question 4: In the heavy ball momentum method, the new direction is a combination of:
+
+- Current gradient and noise
+- **Previous parameter and current value**
+- Previous update and current gradient
+- Gradient norm and function value
+
+## Question 5: In AdaGrad, the learning rate is
+
+- Constant for all parameters
+- Increasing over time
+- Decreasing for frequently updated parameters
+- Randomly sampled at each step
+
+## Question 6: Why is bias correction used in ADAM?
+
+• To make convergence faster
+• To compensate for initialization at zero
+• To prevent exploding gradients
+• To add noise to the gradient update
+
+## Question 7: In ADAM, the step size is:
+
+• Fixed
+• Increasing
+• Scaled by gradient history
+• Decreased linearly
+
+## Question 8: Mini-batch SGD uses:
+
+• The entire data set
+5
+• Only one sample
+• A subset of data points
+• Data sorted by the objective function value
+
+## Question 9: What is a common downside of very small batch size SGD?
+
+• Too slow
+• Too stable
+• High variance in updates
+• Uses entire data set per iteration

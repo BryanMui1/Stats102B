@@ -1,5 +1,5 @@
 ---
-title: "HW  3"
+title: "HW 3"
 format: pdf
 ---
 
@@ -25,6 +25,9 @@ library(dplyr)
 library(tidyr)
 library(readr)
 library(ROCR)
+library(viridis)
+library(glmnet)
+viridis_colors <- viridis(100)
 ```
 
 Load Data:
@@ -37,16 +40,21 @@ test_main <- read_csv("mnist_test.csv")
 Partition into Train/Test/Validation tensors:
 ```{r}
 # Separate into 3/5
-test_35 <- test_main %>%
-  filter(label == 3 | label == 5)
 train_35 <- train_main %>%
-  filter(label == 3 | label == 5)
-val_35 <- val_main %>%
-  filter(label == 3 | label == 5)
+  filter(label == 3 | label == 5) %>%
+  mutate(label = ifelse(label == 3, 0, 1))
 
-train_35 %>%
-  group_by(label) %>%
-  summarize(count = n())
+val_35 <- val_main %>%
+  filter(label == 3 | label == 5) %>%
+  mutate(label = ifelse(label == 3, 0, 1))
+
+test_35 <- test_main %>%
+  filter(label == 3 | label == 5) %>%
+  mutate(label = ifelse(label == 3, 0, 1))
+
+# train_35 %>%
+#   group_by(label) %>%
+#   summarize(count = n())
 
 # Training Data
 x_train_35 <- train_35 %>%
@@ -85,69 +93,129 @@ y_test_35 <- test_35 %>%
 
 MLP Code:
 ```{r}
-# Parameters
-seed_parameter = 123
-n = 10000
-p = 100
-corr_factor = 0.5
-flip_factor = 0.15
-epochs = 50
-batch_sizes = c(16, 64)
-hidden_layers = list(c(32, 128), c(64, 128))  # two-layer configurations
-base_lr = 0.1
-decay_rate = 0.7
-
-# Data generation
-# generate_correlated_data = function(n_samples = n, n_features = p, 
-#                                     rho = corr_factor, flip_f = flip_factor, seed = NULL) {
-#   if (!is.null(seed)) set.seed(seed)
-#   Sigma = matrix(rho, nrow = n_features, ncol = n_features)
-#   diag(Sigma) = 1
-#   X = mvrnorm(n_samples, mu = rep(0, n_features), Sigma = Sigma)
-#   beta = runif(n_features, -1, 1)
-#   logits = X %*% beta
-#   probs = 1 / (1 + exp(-logits))
-#   y = rbinom(n_samples, 1, probs)
-#   flip_idx = sample(1:n_samples, size = flip_f * n_samples)
-#   y[flip_idx] = 1 - y[flip_idx]
-#   data.frame(y = y, X)
-# }
-
-# Data
-# data = generate_correlated_data(n, p, corr_factor, flip_factor, seed_parameter)
-# X = as.matrix(data[, -1])
-# Y = as.numeric(data[, 1])
-
-# Train/Val/Test split
-# train_idx = 1:floor(0.6 * n)
-# val_idx = (floor(0.6 * n) + 1):floor(0.8 * n)
-# test_idx = (floor(0.8 * n) + 1):n
-# X_train = X[train_idx, ]; Y_train = Y[train_idx]
-# X_val = X[val_idx, ]; Y_val = Y[val_idx]
-# X_test = X[test_idx, ]; Y_test = Y[test_idx]
-
-
-# MLP model definition
-mlp_model = function(input_dim, hidden1, hidden2) {
+# MLP model definition: MLP with one hidden layer
+mlp_1_layer = function(input_dim, hidden1) {
   nn_module(
     initialize = function() {
       self$fc1 = nn_linear(input_dim, hidden1)
-      self$fc2 = nn_linear(hidden1, hidden2)
-      self$fc3 = nn_linear(hidden2, 1)
+      self$fc2 = nn_linear(hidden1, 1)
     },
     forward = function(x) {
       x %>% 
         self$fc1() %>% nnf_relu() %>%
-        self$fc2() %>% nnf_relu() %>%
-        self$fc3() %>% torch_sigmoid()
+        self$fc2() %>% torch_sigmoid()
     }
   )
 }
+```
 
-# Generate all combinations of hidden layer sizes
-hidden_combinations = expand.grid(hidden_layers[[1]], hidden_layers[[2]])
-hidden_combinations = as.data.frame(hidden_combinations)
-colnames(hidden_combinations) = c("h1", "h2")
+Train and Output the model:
+
+```{r}
+# Parameters
+seed_parameter <- 123
+n <- 10000
+p <- 784
+corr_factor <- 0.5
+flip_factor <- 0.15
+epochs <- 50
+batch_size <- 16
+h1 <- 32
+base_lr <- 0.1
+decay_rate <- 0.7
+
+# Set seed
+set.seed(seed_parameter)
+torch_manual_seed(seed_parameter)
+
+# Print model config
+cat("Trying MLP with 1 hidden layer of size", h1, "\n")
+
+# Initialize model
+model = mlp_1_layer(p, h1)()
+optimizer = optim_sgd(model$parameters, lr = base_lr)
+loss_fn = nn_bce_loss()
+
+train_loss_history = c()
+val_loss_history = c()
+
+for (epoch in 1:epochs) {
+  lr = base_lr * decay_rate^(epoch - 1)
+  optimizer$param_groups[[1]]$lr = lr
+  
+  idx = sample(nrow(x_train_35))
+  x_shuffled = x_train_35[idx, ]
+  y_shuffled = y_train_35[idx, ]
+  
+  for (i in seq(1, nrow(x_shuffled), by = batch_size)) {
+    end_idx = min(i + batch_size - 1, nrow(x_shuffled))
+    x_batch = x_shuffled[i:end_idx, ]
+    y_batch = y_shuffled[i:end_idx, , drop = FALSE]
+    
+    optimizer$zero_grad()
+    y_pred = model(x_batch)
+    loss = loss_fn(y_pred, y_batch)
+    loss$backward()
+    optimizer$step()
+  }
+  
+  with_no_grad({
+    train_pred <- model(x_train_35)
+    val_pred <- model(x_val_35)
+    train_loss <- loss_fn(train_pred, y_train_35)$item()
+    val_loss <- loss_fn(val_pred, y_val_35)$item()
+  })
+  
+  train_loss_history = c(train_loss_history, train_loss)
+  val_loss_history = c(val_loss_history, val_loss)
+}
+
+# Store results in keyed list
+key = paste0("Batch_", batch_size, "_Hidden_", h1)
+results = list(train = train_loss_history, val = val_loss_history)
+
+```
+
+```{r}
+# Model Output
+
+# Plotting training and validation loss
+loss_df = data.frame(
+  Epoch = 1:epochs,
+  Training = train_loss_history,
+  Validation = val_loss_history
+)
+
+loss_long = pivot_longer(loss_df, cols = c("Training", "Validation"),
+                         names_to = "LossType", values_to = "Loss")
+
+# Separate plots for Training and Validation loss
+ggplot(loss_long %>% filter(LossType == "Training"), aes(x = Epoch, y = Loss)) +
+  geom_line(color = "pink") +
+  theme_minimal() +
+  ggtitle("Training Loss For 1 Layer MLP")
+
+# Plot Validation Loss
+ggplot(loss_long %>% filter(LossType == "Validation"), aes(x = Epoch, y = Loss)) +
+  geom_line(color = "green", linetype = "dashed") +
+  theme_minimal() +
+  ggtitle("Validation Loss For 1 Layer MLP")
+```
+
+* Select the MLP that performs the best based on the validation set for the mini-batch size s = 64, 128, 256 and the dimension of the hidden layer 64, 128, 256. Fix the number of epochs to 30.
+
+```{r}
+# Parameters
+seed_parameter = 123
+n = 10000
+p = 784
+corr_factor = 0.5
+flip_factor = 0.15
+epochs = 30
+batch_sizes = c(64, 128, 256)
+hidden_layers = c(64, 128, 256)  # two-layer configurations
+base_lr = 0.1
+decay_rate = 0.7
 
 # Training loop
 results = list()
@@ -156,15 +224,13 @@ best_model = NULL
 best_config = NULL
 
 for (batch_size in batch_sizes) {
-  for (i in 1:nrow(hidden_combinations)) {
-    h1 = hidden_combinations$h1[i]
-    h2 = hidden_combinations$h2[i]
+  for (h1 in hidden_layers) {
     
-    # Print the model configuration being used
-    cat("Trying model with h1 =", h1, "and h2 =", h2, "\n")
+    # Print model config
+    cat("Trying MLP with 1 hidden layer of size", h1, "Batch Size", batch_size, "\n")
     
-    # Initialize model and optimizer
-    model = mlp_model(p, h1, h2)()
+    # Initialize model
+    model = mlp_1_layer(p, h1)()
     optimizer = optim_sgd(model$parameters, lr = base_lr)
     loss_fn = nn_bce_loss()
     
@@ -172,41 +238,38 @@ for (batch_size in batch_sizes) {
     val_loss_history = c()
     
     for (epoch in 1:epochs) {
-      # Learning rate decay
-      lr = base_lr * decay_rate^(epoch - 1)
-      optimizer$param_groups[[1]]$lr = lr
-      
-      # Shuffle the data
-      idx = sample(nrow(x_train))
-      x_shuffled = x_train[idx, ]
-      y_shuffled = y_train[idx, ]
-      
-      for (i in seq(1, nrow(x_shuffled), by = batch_size)) {
-        end_idx = min(i + batch_size - 1, nrow(x_shuffled))
-        x_batch = x_shuffled[i:end_idx, ]
-        y_batch = y_shuffled[i:end_idx, , drop = FALSE]
+        lr = base_lr * decay_rate^(epoch - 1)
+        optimizer$param_groups[[1]]$lr = lr
         
-        optimizer$zero_grad()
-        y_pred = model(x_batch)
-        loss = loss_fn(y_pred, y_batch)
-        loss$backward()
-        optimizer$step()
+        idx = sample(nrow(x_train_35))
+        x_shuffled = x_train_35[idx, ]
+        y_shuffled = y_train_35[idx, ]
+        
+        for (i in seq(1, nrow(x_shuffled), by = batch_size)) {
+          end_idx = min(i + batch_size - 1, nrow(x_shuffled))
+          x_batch = x_shuffled[i:end_idx, ]
+          y_batch = y_shuffled[i:end_idx, , drop = FALSE]
+          
+          optimizer$zero_grad()
+          y_pred = model(x_batch)
+          loss = loss_fn(y_pred, y_batch)
+          loss$backward()
+          optimizer$step()
+        }
+        
+        with_no_grad({
+          train_pred <- model(x_train_35)
+          val_pred <- model(x_val_35)
+          train_loss <- loss_fn(train_pred, y_train_35)$item()
+          val_loss <- loss_fn(val_pred, y_val_35)$item()
+        })
+        
+        train_loss_history = c(train_loss_history, train_loss)
+        val_loss_history = c(val_loss_history, val_loss)
       }
       
-      # Track training and validation loss
-      with_no_grad({
-        train_pred <- model(x_train)
-        val_pred <- model(x_val)
-        train_loss <- loss_fn(train_pred, y_train)$item()
-        val_loss <- loss_fn(val_pred, y_val)$item()
-      })
-      
-      train_loss_history = c(train_loss_history, train_loss)
-      val_loss_history = c(val_loss_history, val_loss)
-    }
-    
-    # Store the results
-    key = paste0("Batch_", batch_size, "_Hidden_", h1, "_", h2)
+    # Store results in keyed list
+    key = paste0("Batch_", batch_size, "_Hidden_", h1)
     results[[key]] = list(train = train_loss_history, val = val_loss_history)
     
     # Update best model if needed
@@ -219,7 +282,10 @@ for (batch_size in batch_sizes) {
 }
 
 cat("Best model config:", best_config, "\n")
+cat("Best val loss:", best_val_loss, "\n")
+```
 
+```{r}
 # Plotting training and validation loss
 loss_df = data.frame()
 for (key in names(results)) {
@@ -237,23 +303,314 @@ loss_long = pivot_longer(loss_df, cols = c("Training", "Validation"),
 # Separate plots for Training and Validation loss
 ggplot(loss_long %>% filter(LossType == "Training"),
        aes(x = Epoch, y = Loss, color = Model)) +
-  geom_line() + theme_minimal() + ggtitle("Training Loss")
+  geom_line() + theme_minimal() + ggtitle("Training Loss 3/5")
 
 ggplot(loss_long %>% filter(LossType == "Validation"),
        aes(x = Epoch, y = Loss, color = Model)) +
-  geom_line(linetype = "dashed") + theme_minimal() + ggtitle("Validation Loss")
+  geom_line(linetype = "dashed") + theme_minimal() + ggtitle("Validation Loss 3/5")
 ```
 
 
-* Select the MLP that performs the best based on the validation set for the mini-batch size s = 64, 128, 256 and the dimension of the hidden layer 64, 128, 256. Fix the number of epochs to 30.
-
 * Report the performance of the best performing MLP in the test data set by plotting the ROC curve and calculating the AUC
+
+The best model config was Batch_64_Hidden_64, meaning batch size = 64 and with 64 hidden layer size. It had the lowest training lost and validation loss at 0.051, closest to the Batch 64 and Hidden 256 model.
+
+Plotting the ROC curve and calculating the AUC:
+```{r}
+with_no_grad({
+  pred_probs_tensor <- best_model(x_test_35)  # Predict probabilities
+})
+
+pred_probs <- as.numeric(pred_probs_tensor)
+true_labels <- as.numeric(y_test_35)
+
+
+# Calc ROC
+pred <- prediction(pred_probs, true_labels)
+perf_m <- performance(pred, "tpr", "fpr")
+
+# Calc AUC
+auc <- performance(pred, "auc")
+auc_value <- auc@y.values[[1]]
+cat("AUC =", auc_value, "\n")
+
+# Plot the Curve
+plot(perf_m, colorize = TRUE, colorkey.label = "Cutoff",
+     colorize.palette = viridis_colors,
+     main = "ROC Curve 3 and 5 Prediction, 64 Batch Size, 64 Hidden Layer Size")
+abline(a = 0, b = 1, lty = 2, col = "black")
+```
+
 
 * Repeat the exercise to classify the digits 4 and 9
 
+Partition into Train/Test/Validation tensors:
+```{r}
+# Separate into 4/9
+train_49 <- train_main %>%
+  filter(label == 4 | label == 9) %>%
+  mutate(label = ifelse(label == 4, 0, 1))
+
+val_49 <- val_main %>%
+  filter(label == 4 | label == 9) %>%
+  mutate(label = ifelse(label == 4, 0, 1))
+
+test_49 <- test_main %>%
+  filter(label == 4 | label == 9) %>%
+  mutate(label = ifelse(label == 4, 0, 1))
+
+# Training Data
+x_train_49 <- train_49 %>%
+  select(-label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+
+y_train_49 <- train_49 %>%
+  pull(label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+
+# Validation Data
+x_val_49 <- val_49 %>%
+  select(-label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+
+y_val_49 <- val_49 %>%
+  pull(label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+
+# Test Data
+x_test_49 <- test_49 %>%
+  select(-label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+
+y_test_49 <- test_49 %>%
+  pull(label) %>%
+  as.matrix() %>%
+  torch_tensor(dtype = torch_float())
+```
+
+```{r}
+# Parameters
+seed_parameter = 123
+n = 10000
+p = 784
+corr_factor = 0.5
+flip_factor = 0.15
+epochs = 30
+batch_sizes = c(64, 128, 256)
+hidden_layers = c(64, 128, 256)  # two-layer configurations
+base_lr = 0.1
+decay_rate = 0.7
+
+# Training loop
+results = list()
+best_val_loss = Inf
+best_model = NULL
+best_config = NULL
+
+for (batch_size in batch_sizes) {
+  for (h1 in hidden_layers) {
+    
+    # Print model config
+    cat("Trying MLP with 1 hidden layer of size", h1, "Batch Size", batch_size, "\n")
+    
+    # Initialize model
+    model = mlp_1_layer(p, h1)()
+    optimizer = optim_sgd(model$parameters, lr = base_lr)
+    loss_fn = nn_bce_loss()
+    
+    train_loss_history = c()
+    val_loss_history = c()
+    
+    for (epoch in 1:epochs) {
+        lr = base_lr * decay_rate^(epoch - 1)
+        optimizer$param_groups[[1]]$lr = lr
+        
+        idx = sample(nrow(x_train_49))
+        x_shuffled = x_train_49[idx, ]
+        y_shuffled = y_train_49[idx, ]
+        
+        for (i in seq(1, nrow(x_shuffled), by = batch_size)) {
+          end_idx = min(i + batch_size - 1, nrow(x_shuffled))
+          x_batch = x_shuffled[i:end_idx, ]
+          y_batch = y_shuffled[i:end_idx, , drop = FALSE]
+          
+          optimizer$zero_grad()
+          y_pred = model(x_batch)
+          loss = loss_fn(y_pred, y_batch)
+          loss$backward()
+          optimizer$step()
+        }
+        
+        with_no_grad({
+          train_pred <- model(x_train_49)
+          val_pred <- model(x_val_49)
+          train_loss <- loss_fn(train_pred, y_train_49)$item()
+          val_loss <- loss_fn(val_pred, y_val_49)$item()
+        })
+        
+        train_loss_history = c(train_loss_history, train_loss)
+        val_loss_history = c(val_loss_history, val_loss)
+      }
+      
+    # Store results in keyed list
+    key = paste0("Batch_", batch_size, "_Hidden_", h1)
+    results[[key]] = list(train = train_loss_history, val = val_loss_history)
+    
+    # Update best model if needed
+    if (min(val_loss_history) < best_val_loss) {
+      best_val_loss = min(val_loss_history)
+      best_model = model
+      best_config = key
+    }
+  }
+}
+
+cat("Best model config:", best_config, "\n")
+cat("Best val loss:", best_val_loss, "\n")
+```
+
+The best model config was Batch_64_Hidden_256, meaning batch size = 64 and with a hidden layer size 256. It had the lowest training loss with 0.118
+
+# Plotting training and validation loss
+
+```{r}
+loss_df = data.frame()
+for (key in names(results)) {
+  df = data.frame(
+    Epoch = 1:epochs,
+    Training = results[[key]]$train,
+    Validation = results[[key]]$val,
+    Model = key
+  )
+  loss_df = rbind(loss_df, df)
+}
+loss_long = pivot_longer(loss_df, cols = c("Training", "Validation"),
+                         names_to = "LossType", values_to = "Loss")
+
+# Separate plots for Training and Validation loss
+ggplot(loss_long %>% filter(LossType == "Training"),
+       aes(x = Epoch, y = Loss, color = Model)) +
+  geom_line() + theme_minimal() + ggtitle("Training Loss 4/9")
+
+ggplot(loss_long %>% filter(LossType == "Validation"),
+       aes(x = Epoch, y = Loss, color = Model)) +
+  geom_line(linetype = "dashed") + theme_minimal() + ggtitle("Validation Loss 4/9")
+```
+
+Plotting the ROC curve and calculating the AUC:
+```{r}
+with_no_grad({
+  pred_probs_tensor <- best_model(x_test_49)  # Predict probabilities
+})
+
+pred_probs <- as.numeric(pred_probs_tensor)
+true_labels <- as.numeric(y_test_49)
+
+
+# Calc ROC
+pred <- prediction(pred_probs, true_labels)
+perf_m <- performance(pred, "tpr", "fpr")
+
+# Calc AUC
+auc <- performance(pred, "auc")
+auc_value <- auc@y.values[[1]]
+cat("AUC =", auc_value, "\n")
+
+# Plot the Curve
+plot(perf_m, colorize = TRUE, colorkey.label = "Cutoff",
+     colorize.palette = viridis_colors,
+     main = "ROC Curve 4/9 Prediction, 64 Batch Size, 256 Hidden Layer Size")
+abline(a = 0, b = 1, lty = 2, col = "black")
+```
+
 * Comment on the results
+
+I can see that the performance is much better on the test data for the 4 and 9 predictions. I can see this because of the ROC curve being much sharper in the 4-9 data set, and the AUC from 3/5 to 4/9 went from 0.7274219 to 0.9898937, with the same model. This is likely because 3 looks closer to a 5 than 4 to a 9, which could explain why the 4 to 9 classifier was much better than the 2 to 5 classifier
 
 
 ### Part (b):
 
 Compare the performance of the best single-layer MLP you have trained for the two classification tasks to that of logistic regression. Specifically, train logistic regression on the train data set and test its performance on the test data set. Plot its ROC and calculate its AUC.
+
+**Logistic for 3 and 5 Prediction:**
+
+```{r}
+predictors <- paste0("V", 2:785)
+rhs <- paste(predictors, collapse = " + ")
+model_eq <- paste("label ~", rhs)
+X <- as.matrix(train_35[, 2:785])
+y <- as.matrix(train_35$label)
+
+l1 <- glm(data=train_35, formula = formula(model_eq), family = binomial())
+summary(l1)
+```
+
+Plotting the ROC curve and calculating the AUC:
+```{r}
+X <- as.data.frame(test_35[, 2:785])
+y <- test_35$label
+pred <- as.numeric(predict(l1, X))
+probs <- as.numeric(1 / (1 + exp(-pred)))
+true_labels <- as.numeric(y)
+
+# Calc ROC
+pred <- prediction(probs, true_labels)
+perf_m <- performance(pred, "tpr", "fpr")
+
+# Calc AUC
+auc <- performance(pred, "auc")
+auc_value <- auc@y.values[[1]]
+cat("AUC =", auc_value, "\n")
+
+# Plot the Curve
+plot(perf_m, colorize = TRUE, colorkey.label = "Cutoff",
+     colorize.palette = viridis_colors,
+     main = "ROC Curve 3 and 5 Prediction, 64 Batch Size, 64 Hidden Layer Size")
+abline(a = 0, b = 1, lty = 2, col = "black")
+```
+
+The performance of the Logistic Regression model was about the same than that of the MLP. The MLP AUC 0.9980987 was while the logistic regression AUC was 0.9806825. This indicates that the Logistic Regression model was classifying a little worse for the digits 3/5. Overall, both  models are fairly good, because AUC is high(close to 1).
+
+**Logistic for 4 and 9 Prediction:**
+
+```{r}
+predictors <- paste0("V", 2:785)
+rhs <- paste(predictors, collapse = " + ")
+model_eq <- paste("label ~", rhs)
+X <- as.matrix(train_49[, 2:785])
+y <- as.matrix(train_49$label)
+
+l2 <- glm(data = train_49, formula = formula(model_eq), family = binomial())
+summary(l2)
+```
+
+Plotting the ROC curve and calculating the AUC:
+```{r}
+X <- as.data.frame(test_49[, 2:785])
+y <- test_49$label
+pred <- as.numeric(predict(l2, X))
+probs <- as.numeric(1 / (1 + exp(-pred)))
+true_labels <- as.numeric(y)
+
+# Calc ROC
+pred <- prediction(probs, true_labels)
+perf_m <- performance(pred, "tpr", "fpr")
+
+# Calc AUC
+auc <- performance(pred, "auc")
+auc_value <- auc@y.values[[1]]
+cat("AUC =", auc_value, "\n")
+
+# Plot the Curve
+plot(perf_m, colorize = TRUE, colorkey.label = "Cutoff",
+     colorize.palette = viridis_colors,
+     main = "ROC Curve 3 and 5 Prediction, 64 Batch Size, 64 Hidden Layer Size")
+abline(a = 0, b = 1, lty = 2, col = "black")
+```
+
+The performance of the Logistic Regression model was worse than that of the MLP. The MLP AUC was around 0.99 while the logistic regression AUC was 0.9322635. This indicates that the MLP model was classifying better for the digits 4/9. Overall, both models are fairly good, because AUC is high.

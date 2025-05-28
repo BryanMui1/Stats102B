@@ -40,7 +40,7 @@
   \KOMAoptions{parskip=half}}
 \makeatother
 \usepackage{xcolor}
-\usepackage[left=0.5in, right=0.5in, top=1in, bottom=1in]{geometry}
+\usepackage[left=0.3in, right=0.3in, top=0.3in, bottom=0.3in]{geometry}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 % Make \paragraph and \subparagraph free-standing
@@ -204,36 +204,209 @@
 \maketitle
 
 
-\subsection{Quarto}\label{quarto}
-
-Quarto enables you to weave together content and executable code into a
-finished document. To learn more about Quarto see
-\url{https://quarto.org}.
-
-\subsection{Running Code}\label{running-code}
-
-When you click the \textbf{Render} button a document will be generated
-that includes both content and the output of embedded code. You can
-embed code like this:
+Due Wed, June 4, 11:00 pm
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\DecValTok{1} \SpecialCharTok{+} \DecValTok{1}
+\FunctionTok{library}\NormalTok{(tidyverse)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-[1] 2
+-- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
+v dplyr     1.1.4     v readr     2.1.5
+v forcats   1.0.0     v stringr   1.5.1
+v ggplot2   3.5.2     v tibble    3.2.1
+v lubridate 1.9.4     v tidyr     1.3.1
+v purrr     1.0.4     
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+i Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
 \end{verbatim}
 
-You can add options to executable code like this
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{train }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\StringTok{"train\_data.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
 
 \begin{verbatim}
-[1] 4
+Rows: 600 Columns: 601
+-- Column specification --------------------------------------------------------
+Delimiter: ","
+dbl (601): X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,...
+
+i Use `spec()` to retrieve the full column specification for this data.
+i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 \end{verbatim}
 
-The \texttt{echo:\ false} option disables the printing of code (only
-output is displayed).
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{val }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\StringTok{"validation\_data.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Rows: 200 Columns: 601
+-- Column specification --------------------------------------------------------
+Delimiter: ","
+dbl (601): X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,...
+
+i Use `spec()` to retrieve the full column specification for this data.
+i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+\end{verbatim}
+
+\newpage
+
+\subsection{Problem 1}\label{problem-1}
+
+Consider the function
+
+\[
+f(x) = \frac{1}{4} x^4 - x^2 + 2x
+\]
+
+\subsubsection{\texorpdfstring{Part
+\((\alpha)\)}{Part (\textbackslash alpha)}}\label{part-alpha}
+
+Using the pure version of Newton's algorithm report \(x_k\) for
+\(k = 20\) (after running the algorithm for 20 iterations) based on the
+following 5 initial points:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(x_0 = −1\)
+\item
+  \(x_0 = 0\)
+\item
+  \(x_0 = 0.1\)
+\item
+  \(x_0 = 1\)
+\item
+  \(x_0 = 2\)
+\end{enumerate}
+
+\textbf{Newton's pure algorithm is as follows:}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Select \(x_0 \in \mathbb{R}^n\)
+\item
+  While stopping criterion \textgreater{} tolerance do:
+
+  \begin{enumerate}
+  \def\labelenumii{\arabic{enumii}.}
+  \tightlist
+  \item
+    \(x_{k+1} = x_k - [\nabla^2f(x_k)]^{-1} \nabla f(x_k)\)
+  \item
+    Calculate value of stopping
+    criterion(\(|f(x_{k+1}) - f(x_k)| \leq \epsilon\))
+  \end{enumerate}
+\end{enumerate}
+
+Gradient:
+\(\nabla f(x) = \frac{\partial}{\partial x} = f'(x) = x^3 - 2x + 2\)
+
+Hessian:
+\(\nabla^2 f(x) = \frac{\partial^2}{\partial x^2} = f''(x) = 3x^2 - 2\)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# params}
+\NormalTok{max\_iter }\OtherTok{\textless{}{-}} \DecValTok{20}
+\NormalTok{starting\_points }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\FloatTok{0.1}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+\NormalTok{stopping\_tol }\OtherTok{\textless{}{-}} \FloatTok{1e{-}6}
+
+
+\CommentTok{\# algorithm}
+\NormalTok{newton\_pure\_alg }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(max\_iter, starting\_point, stopping\_tol) \{}
+\NormalTok{  beta }\OtherTok{\textless{}{-}}\NormalTok{ starting\_point}
+\NormalTok{  iterations\_ran }\OtherTok{\textless{}{-}} \DecValTok{0}
+\NormalTok{  betas\_vec }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(beta)}
+  
+\NormalTok{  obj }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x) \{}
+  \FunctionTok{return}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\DecValTok{4} \SpecialCharTok{*}\NormalTok{ x}\SpecialCharTok{\^{}}\DecValTok{4} \SpecialCharTok{{-}}\NormalTok{ x}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{x)}
+\NormalTok{  \}}
+\NormalTok{  grad }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x) \{}
+\NormalTok{    x}\SpecialCharTok{\^{}}\DecValTok{3} \SpecialCharTok{{-}} \DecValTok{2}\SpecialCharTok{*}\NormalTok{x }\SpecialCharTok{+} \DecValTok{2}
+\NormalTok{  \}}
+\NormalTok{  hessian }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x) \{}
+    \DecValTok{3}\SpecialCharTok{*}\NormalTok{x}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{{-}} \DecValTok{2}
+\NormalTok{  \}}
+  
+  \ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ (}\FunctionTok{grad}\NormalTok{(beta) }\SpecialCharTok{/} \FunctionTok{hessian}\NormalTok{(beta))}
+\NormalTok{    betas\_vec[i}\SpecialCharTok{+}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+    \ControlFlowTok{if}\NormalTok{(}\FunctionTok{abs}\NormalTok{(beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta) }\SpecialCharTok{\textless{}=}\NormalTok{ stopping\_tol) \{ }\ControlFlowTok{break}\NormalTok{ \}}
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{  \}}
+\NormalTok{  iterations\_ran }\OtherTok{\textless{}{-}}\NormalTok{ i}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{iterations=}\NormalTok{iterations\_ran, }\AttributeTok{betas=}\NormalTok{betas\_vec))}
+\NormalTok{\}}
+
+\CommentTok{\# running the alg}
+\ControlFlowTok{for}\NormalTok{ (starting\_point }\ControlFlowTok{in}\NormalTok{ starting\_points) \{}
+\NormalTok{  result }\OtherTok{\textless{}{-}} \FunctionTok{newton\_pure\_alg}\NormalTok{(max\_iter, starting\_point, stopping\_tol)}
+  \FunctionTok{cat}\NormalTok{(}\StringTok{"Starting Point:"}\NormalTok{, starting\_point, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Iterations:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{iterations, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Betas:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{betas,}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Starting Point: -1 
+Iterations: 8 
+Betas: -1 -4 -2.826087 -2.146719 -1.842326 -1.772848 -1.769301 -1.769292 -1.769292 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+Starting Point: 0 
+Iterations: 20 
+Betas: 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+Starting Point: 0.1 
+Iterations: 20 
+Betas: 0.1 1.014213 0.07965577 1.009099 0.05222653 1.003965 0.02332944 1.000804 0.004806795 1.000035 0.0002072525 1 3.865288e-07 1 1.34559e-12 1 0 1 0 1 0 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+Starting Point: 1 
+Iterations: 20 
+Betas: 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+Starting Point: 2 
+Iterations: 9 
+Betas: 2 1.4 0.8989691 -1.288779 -2.105767 -1.8292 -1.771716 -1.769297 -1.769292 -1.769292 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+\end{verbatim}
+
+\subsubsection{Part (i) What do you
+observe?}\label{part-i-what-do-you-observe}
+
+\subsubsection{Part (ii) How can you fix the issue reported in
+(i)?}\label{part-ii-how-can-you-fix-the-issue-reported-in-i}
+
+\newpage
+
+\subsection{Problem 2}\label{problem-2}
+
+Consider the data in the train data.csv file. The first 600 columns
+correspond to the predictors and the last column to the response y.
+
+\subsubsection{Part (i) Implement that proximal gradient algorithm for
+Lasso regression, by modifying appropriately your code from Homework
+1.}\label{part-i-implement-that-proximal-gradient-algorithm-for-lasso-regression-by-modifying-appropriately-your-code-from-homework-1.}
+
+To select a good value for the regularization parameter \(λ\) use the
+data in the validation data.csv to calculate the sum-of-squares error
+validation loss.
+
+\subsubsection{\texorpdfstring{Part(ii) Show a plot of the training and
+validation loss as a function of iterations. Report the number of
+regression coefficients estimated as zero based on the best value of
+\(λ\) you
+selected.}{Part(ii) Show a plot of the training and validation loss as a function of iterations. Report the number of regression coefficients estimated as zero based on the best value of λ you selected.}}\label{partii-show-a-plot-of-the-training-and-validation-loss-as-a-function-of-iterations.-report-the-number-of-regression-coefficients-estimated-as-zero-based-on-the-best-value-of-ux3bb-you-selected.}
 
 
 

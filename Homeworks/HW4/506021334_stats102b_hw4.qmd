@@ -3,7 +3,7 @@ title: "Stats 102B HW 4"
 author: "Bryan Mui - UID 506021334"
 format:
   pdf:
-    geometry: left=0.5in, right=0.5in, top=1in, bottom=1in
+    geometry: left=0.3in, right=0.3in, top=0.3in, bottom=0.3in
     keep-tex: true
     include-in-header:
        text: |
@@ -12,23 +12,97 @@ format:
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
-## Quarto
+Due Wed, June 4, 11:00 pm
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+```{r read-data}
+library(tidyverse)
+train <- read_csv("train_data.csv")
+val <- read_csv("validation_data.csv")
 ```
 
-You can add options to executable code like this 
+\newpage
 
-```{r}
-#| echo: false
-2 * 2
+## Problem 1
+
+Consider the function
+
+$$
+f(x) = \frac{1}{4} x^4 - x^2 + 2x
+$$
+
+### Part $(\alpha)$
+
+Using the pure version of Newton’s algorithm report $x_k$ for $k = 20$ (after running the algorithm for 20 iterations) based on the following 5 initial points:
+
+1.  $x_0 = −1$
+2.  $x_0 = 0$
+3.  $x_0 = 0.1$
+4.  $x_0 = 1$
+5.  $x_0 = 2$
+
+**Newton's pure algorithm is as follows:**
+
+1.  Select $x_0 \in \mathbb{R}^n$
+2.  While stopping criterion \> tolerance do:
+    1.  $x_{k+1} = x_k - [\nabla^2f(x_k)]^{-1} \nabla f(x_k)$
+    2.  Calculate value of stopping criterion($|f(x_{k+1}) - f(x_k)| \leq \epsilon$)
+
+Gradient: $\nabla f(x) = \frac{\partial}{\partial x} = f'(x) = x^3 - 2x + 2$
+
+Hessian: $\nabla^2 f(x) = \frac{\partial^2}{\partial x^2} = f''(x) = 3x^2 - 2$
+
+```{r, 1-alpha}
+# params
+max_iter <- 20
+starting_points <- c(-1, 0, 0.1, 1, 2)
+stopping_tol <- 1e-6
+
+
+# algorithm
+newton_pure_alg <- function(max_iter, starting_point, stopping_tol) {
+  beta <- starting_point
+  iterations_ran <- 0
+  betas_vec <- c(beta)
+  
+  obj <- function(x) {
+  return(1/4 * x^4 - x^2 + 2*x)
+  }
+  grad <- function(x) {
+    x^3 - 2*x + 2
+  }
+  hessian <- function(x) {
+    3*x^2 - 2
+  }
+  
+  for(i in 1:max_iter) {
+    beta_new <- beta - (grad(beta) / hessian(beta))
+    betas_vec[i+1] <- beta_new
+    if(abs(beta_new - beta) <= stopping_tol) { break }
+    beta <- beta_new
+  }
+  iterations_ran <- i
+  return(list(iterations=iterations_ran, betas=betas_vec))
+}
+
+# running the alg
+for (starting_point in starting_points) {
+  result <- newton_pure_alg(max_iter, starting_point, stopping_tol)
+  cat("Starting Point:", starting_point, "\nIterations:", result$iterations, "\nBetas:", result$betas,"\n", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "\n")
+}
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+### Part (i) What do you observe?
+
+### Part (ii) How can you fix the issue reported in (i)?
+
+\newpage
+
+## Problem 2
+
+Consider the data in the train data.csv file. The first 600 columns correspond to the predictors and the last column to the response y.
+
+### Part (i) Implement that proximal gradient algorithm for Lasso regression, by modifying appropriately your code from Homework 1.
+
+To select a good value for the regularization parameter $λ$ use the data in the validation data.csv to calculate the sum-of-squares error validation loss.
+
+### Part(ii) Show a plot of the training and validation loss as a function of iterations. Report the number of regression coefficients estimated as zero based on the best value of $λ$ you selected.

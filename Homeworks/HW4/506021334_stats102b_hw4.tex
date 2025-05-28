@@ -351,41 +351,108 @@ Hessian:
 \NormalTok{\}}
 
 \CommentTok{\# running the alg}
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Newton\textquotesingle{}s Algorithm(Pure) For Different Starting Points: }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Newton's Algorithm(Pure) For Different Starting Points: 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
 \ControlFlowTok{for}\NormalTok{ (starting\_point }\ControlFlowTok{in}\NormalTok{ starting\_points) \{}
 \NormalTok{  result }\OtherTok{\textless{}{-}} \FunctionTok{newton\_pure\_alg}\NormalTok{(max\_iter, starting\_point, stopping\_tol)}
-  \FunctionTok{cat}\NormalTok{(}\StringTok{"Starting Point:"}\NormalTok{, starting\_point, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Iterations:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{iterations, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Betas:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{betas,}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+  \FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Starting Point:"}\NormalTok{, starting\_point, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Iterations:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{iterations, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Betas:}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+  \FunctionTok{print}\NormalTok{(result}\SpecialCharTok{$}\NormalTok{betas)}
+  \FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}\textasciitilde{}"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
 \NormalTok{\}}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
+
 Starting Point: -1 
 Iterations: 8 
-Betas: -1 -4 -2.826087 -2.146719 -1.842326 -1.772848 -1.769301 -1.769292 -1.769292 
+Betas:
+[1] -1.000000 -4.000000 -2.826087 -2.146719 -1.842326 -1.772848 -1.769301
+[8] -1.769292 -1.769292
+
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
 Starting Point: 0 
 Iterations: 20 
-Betas: 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 
+Betas:
+ [1] 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0
+
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
 Starting Point: 0.1 
 Iterations: 20 
-Betas: 0.1 1.014213 0.07965577 1.009099 0.05222653 1.003965 0.02332944 1.000804 0.004806795 1.000035 0.0002072525 1 3.865288e-07 1 1.34559e-12 1 0 1 0 1 0 
+Betas:
+ [1] 1.000000e-01 1.014213e+00 7.965577e-02 1.009099e+00 5.222653e-02
+ [6] 1.003965e+00 2.332944e-02 1.000804e+00 4.806795e-03 1.000035e+00
+[11] 2.072525e-04 1.000000e+00 3.865288e-07 1.000000e+00 1.345590e-12
+[16] 1.000000e+00 0.000000e+00 1.000000e+00 0.000000e+00 1.000000e+00
+[21] 0.000000e+00
+
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
 Starting Point: 1 
 Iterations: 20 
-Betas: 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 
+Betas:
+ [1] 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1
+
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
 Starting Point: 2 
 Iterations: 9 
-Betas: 2 1.4 0.8989691 -1.288779 -2.105767 -1.8292 -1.771716 -1.769297 -1.769292 -1.769292 
+Betas:
+ [1]  2.0000000  1.4000000  0.8989691 -1.2887793 -2.1057673 -1.8292000
+ [7] -1.7717158 -1.7692966 -1.7692924 -1.7692924
+
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 \end{verbatim}
 
 \subsubsection{Part (i) What do you
 observe?}\label{part-i-what-do-you-observe}
 
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{images/clipboard-3935267595.png}}
+
+}
+
+\caption{Plot of the Objective Function f(x)}
+
+\end{figure}%
+
+I observe that given the code output, the algorithms that did not
+converge oscillate between 0 1 0 1, which means that it gets stuck when
+the curvature of the graph changes. I think that the graph goes from
+concave up to concave down at this point, which will mess up the
+gradient descent calculation. The Hessian is the second derivative, or
+second order gradient, meaning the concavity of the function will affect
+the sign. Given the update step,
+\(x_{k+1} = x_k - [\nabla^2f(x_k)]^{-1} \nabla f(x_k)\), we can see that
+if the Hessian's sign goes from negative to positive(concave down to
+concave up) or vice versa then it will change the sign of the update
+step to be gradient ascent(away from the minimum) rather than towards it
+
 \subsubsection{Part (ii) How can you fix the issue reported in
 (i)?}\label{part-ii-how-can-you-fix-the-issue-reported-in-i}
+
+I believe that the issue is normally fixed by drawing the graph and
+getting and understanding of the shape, and therefore choosing one of
+the starting points that does end up converging. However, in cases where
+that isn't possible(if the function cannot be plotted or is very
+complex), I would try to build a vector of possible starting points and
+perform a grid search where we run the algorithm on multiple starting
+points and various parameters. This would allow us to find a starting
+point where the algorithm would converge. From the lecture slides, there
+are alternative Newton's algorithms like Newton's algorithm with
+damping, which I would implement if there is too much trouble with the
+pure Newton's algorithm.
 
 \newpage
 
@@ -402,11 +469,17 @@ To select a good value for the regularization parameter \(λ\) use the
 data in the validation data.csv to calculate the sum-of-squares error
 validation loss.
 
+The Proximal Gradient Descent Algorithm(LASSO):
+
 \subsubsection{\texorpdfstring{Part(ii) Show a plot of the training and
 validation loss as a function of iterations. Report the number of
 regression coefficients estimated as zero based on the best value of
 \(λ\) you
 selected.}{Part(ii) Show a plot of the training and validation loss as a function of iterations. Report the number of regression coefficients estimated as zero based on the best value of λ you selected.}}\label{partii-show-a-plot-of-the-training-and-validation-loss-as-a-function-of-iterations.-report-the-number-of-regression-coefficients-estimated-as-zero-based-on-the-best-value-of-ux3bb-you-selected.}
+
+Plotting Training Loss:
+
+Plotting Validation Loss:
 
 
 

@@ -230,10 +230,8 @@ Plotting Training Loss:
 
 ```
 
-
 Plotting Validation Loss:
 
 ```{r 2-2-validation-loss}
 
 ```
-

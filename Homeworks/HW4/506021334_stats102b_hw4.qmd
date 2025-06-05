@@ -1,6 +1,8 @@
 ---
 title: "Stats 102B HW 4"
 author: "Bryan Mui - UID 506021334"
+execute:
+  cache: true
 format:
   pdf:
     geometry: left=0.3in, right=0.3in, top=0.3in, bottom=0.3in
@@ -15,7 +17,9 @@ format:
 Due Wed, June 4, 11:00 pm
 
 ```{r read-data}
+set.seed(777)
 library(tidyverse)
+library(xtable)
 train <- read_csv("train_data.csv")
 val <- read_csv("validation_data.csv")
 ```
@@ -74,6 +78,7 @@ newton_pure_alg <- function(max_iter, starting_point, stopping_tol) {
     3*x^2 - 2
   }
   
+  # Training loop
   for(i in 1:max_iter) {
     beta_new <- beta - (grad(beta) / hessian(beta))
     betas_vec[i+1] <- beta_new
@@ -102,7 +107,7 @@ I observe that given the code output, the algorithms that did not converge oscil
 
 ### Part (ii) How can you fix the issue reported in (i)?
 
-I believe that the issue is normally fixed by drawing the graph and getting and understanding of the shape, and therefore choosing one of the starting points that does end up converging. However, in cases where that isn't possible(if the function cannot be plotted or is very complex), I would try to build a vector of possible starting points and perform a grid search where we run the algorithm on multiple starting points and various parameters. This would allow us to find a starting point where the algorithm would converge. From the lecture slides, there are alternative Newton's algorithms like Newton's algorithm with damping, which I would implement if there is too much trouble with the pure Newton's algorithm.
+I believe that the issue is normally fixed by drawing the graph and getting and understanding of the shape, and therefore choosing one of the starting points that does end up converging. However, in cases where that isn't possible(if the function cannot be plotted or is very complex), I would try to build a vector of possible starting points and perform a grid search where we run the algorithm on multiple starting points and various parameters. This would allow us to find a starting point where the algorithm would converge. Although the grid search is an easy fix, switching algorithms is a better fix. From the lecture slides, there are alternative Newton's algorithms like the Levenberg-Marquard algorithm, which is a fix for when the Hessian is not positive definite by essentially translating the Hessian to positive definite through transforming the eigenvalues of the matrix, which I would implement if there is too much trouble with the pure Newton's algorithm.
 
 \newpage
 
@@ -111,8 +116,6 @@ I believe that the issue is normally fixed by drawing the graph and getting and 
 Consider the data in the train data.csv file. The first 600 columns correspond to the predictors and the last column to the response y.
 
 ### Part (i) Implement that proximal gradient algorithm for Lasso regression, by modifying appropriately your code from Homework 1.
-
-To select a good value for the regularization parameter $λ$ use the data in the validation data.csv to calculate the sum-of-squares error validation loss.
 
 Proximal Gradient Descent is good for problems in the form:
 
@@ -159,19 +162,18 @@ y_val <- val %>%
   select(y) %>%
   as.matrix()
 
-etas <- c(1e-3, 5e-3, 1e-2, 5e-2, 1e-1)
-lambdas <- c(0.001, 0.01, 0.1, 1, 10)
-tol <- 1e-6
-max_iter <- 10000
 
 # Implement Proximal Gradient Descent
-proximal_gradient_descent <- function(X, y, eta, lambda, tol, max_iter) {
+proximal_gradient_descent_lasso <- function(X, y, eta, lambda, tol, max_iter) {
   n <- nrow(X)
   p <- ncol(X)
   beta <- rep(0, p)
   obj_values <- c() # obj values result
   eta_values <- c()  # eta values result
-  beta_values <- matrix(0, nrow = max_iter, ncol = p)
+  sse_train_loss <- c()  # SSE train loss result
+  sse_test_loss <- c()  # SSE test loss result
+  beta_values <- matrix(0, nrow = max_iter, ncol = p) # betas result
+  
   
   # Objective function: Mean Squared Error (MSE)
   obj_function <- function(beta) {
@@ -188,50 +190,140 @@ proximal_gradient_descent <- function(X, y, eta, lambda, tol, max_iter) {
     sign(y_k) * pmax(abs(y_k) - eta * lambda, 0)
   }
   
+  # Grad Descent Step
   for (iter in 1:max_iter) {
     grad <- gradient(beta)
     
     y_k <- beta - eta * grad
     beta_new <- prox(eta, lambda, y_k)
     
+    # Storing the values for result
     eta_values[iter] <- eta
     beta_values[iter, ] <- beta_new
     obj_values[iter] <- obj_function(beta_new)
+    # Storing the SSE losses
+    # get prediction and calculate SSE-train-loss
+    # y = XB
+    y_pred <- X_train %*% beta_new
+    sse_train_loss[iter] <- sum((y_train - y_pred)^2)
     
+    # get prediction and calculate SSE-val-loss
+    # y = XB
+    y_pred <- X_val %*% beta_new
+    sse_val_loss[iter] <- sum((y_val - y_pred)^2)
+    
+    # Stop crit
     if (norm(beta_new - beta, type = "2") < tol) {break}
     
     beta <- beta_new
   }
   
-  return(list(iterations=iter, beta_fin=beta, beta_values=beta_values, obj_values=obj_values, eta_values=eta_values, eta=eta, lambda=lambda))
-}
-
-# Running the Code
-cat("Proxmial Gradient Descent With Lasso: \n")
-
-for (eta in etas) {
-  for (lambda in lambdas) {
-      result <- proximal_gradient_descent(X_train, y_train, eta, lambda, tol, max_iter)
-    cat("\nModel:", 1, "Eta:", result$eta, "Lambda:", result$lambda, "Iterations:", result$iterations, "\n")
-    cat("Last 10 Obj-func values: \n")
-    tail(result$obj_values, 10)
-    cat("\n", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "\n")
-  }
+  return(list(iterations=iter, beta_fin=beta, beta_values=beta_values, obj_values=obj_values, eta_values=eta_values, eta=eta, lambda=lambda, sse_train_loss=sse_train_loss, sse_val_loss=sse_val_loss))
 }
 ```
 
-### Part(ii) Show a plot of the training and validation loss as a function of iterations. Report the number of regression coefficients estimated as zero based on the best value of $λ$ you selected.
+```{r}
+m1 <- proximal_gradient_descent_lasso(X_train, y_train, 0.01, 0.1, 1e-6, 10000)
+```
+
+```{r}
+cat("Iterations:", m1$iterations, "\n")
+cat("Obj Values(Last 10):", "\n")
+tail(m1$obj_values, n = 10)
+cat("Final Beta(first 10):", "\n")
+print(m1$beta_fin[1:10])
+cat("SSE Train Loss(last 10):", "\n")
+tail(m1$sse_train_loss, n=10)
+cat("SSE Val Loss(last 10):", "\n")
+tail(m1$sse_val_loss, n=10)
+```
+
+### Part (ii) To select a good value for the regularization parameter $λ$ use the data in the validation data.csv to calculate the sum-of-squares error validation loss.
+
+```{r 2-3-grid-search}
+# Grid Search Params
+tol <- 1e-6
+max_iter <- 10000
+eta <- 0.01
+# lambdas <- c(
+#   0.001,
+#   0.01, 0.02, 0.05,
+#   0.1, 0.2, 0.5,
+#   1, 2, 5, 10, 20, 50
+# )
+lambdas <- c(0.001, 0.01, 0.1)
+
+# Initialize storing structures
+models_df <- data.frame(
+  Model = integer(),
+  Lambda = numeric(),
+  Iterations = integer(),
+  Converged = logical(),
+  SSE_Train_Loss = numeric(),
+  SSE_Val_Loss = numeric()
+)
+models <- list()
+
+# Running the Code
+for (i in 1:length(lambdas)) {
+    # train the model on specific lambda
+    lambda <- lambdas[i]
+    result <- proximal_gradient_descent_lasso(X_train, y_train, eta, lambda, tol, max_iter)
+    
+    # get prediction and calculate SSE-train-loss
+    # y = XB
+    y_pred <- X_train %*% result$beta_fin
+    sse_train_loss <- sum((y_train - y_pred)^2)
+    
+    # get prediction and calculate SSE-val-loss
+    # y = XB
+    y_pred <- X_val %*% result$beta_fin
+    sse_val_loss <- sum((y_val - y_pred)^2)
+    
+    # Output the model
+    cat("\nModel:", i, "| Lambda:", result$lambda, "| Iterations:", result$iterations, "| Converged?:", result$iterations < max_iter, "| SSE Train Loss:", sse_train_loss, "| SSE Val Loss:", sse_val_loss, "\n")
+    
+    # Store row in the results data frame
+    models_df <- rbind(models_df, data.frame(
+      Model = i,
+      Lambda = result$lambda,
+      Iterations = result$iterations,
+      Converged = result$iterations < max_iter,
+      SSE_Train_Loss = sse_train_loss,
+      SSE_Val_Loss = sse_val_loss
+    ))
+    
+    # Store the model params in a list for later retrieval
+    models[[i]] <- result
+}
+```
+
+```{r}
+# models_df
+latex_table <- xtable(models_df, digits = 4, caption = "Model Results For Different Lambdas")
+print(latex_table, include.rownames = FALSE)
+```
+
+
+### Part(iii) Show a plot of the training and validation loss as a function of iterations. 
 
 Getting the Best Candidates:
 
 Plotting Training Loss:
 
-```{r 2-2-train-loss}
+```{r 2-3-train-loss}
 
 ```
 
 Plotting Validation Loss:
 
-```{r 2-2-validation-loss}
+```{r 2-3-validation-loss}
 
 ```
+
+### Part(iv) Report the number of regression coefficients estimated as zero based on the best value of $λ$ you selected.
+
+```{r}
+
+```
+

@@ -208,25 +208,10 @@ Due Wed, June 4, 11:00 pm
 
 \begin{Shaded}
 \begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{777}\NormalTok{)}
 \FunctionTok{library}\NormalTok{(tidyverse)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
--- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
-v dplyr     1.1.4     v readr     2.1.5
-v forcats   1.0.0     v stringr   1.5.1
-v ggplot2   3.5.2     v tibble    3.2.1
-v lubridate 1.9.4     v tidyr     1.3.1
-v purrr     1.0.4     
--- Conflicts ------------------------------------------ tidyverse_conflicts() --
-x dplyr::filter() masks stats::filter()
-x dplyr::lag()    masks stats::lag()
-i Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(xtable)}
+\FunctionTok{library}\NormalTok{(ggplot2)}
 \NormalTok{train }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\StringTok{"train\_data.csv"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
@@ -340,6 +325,7 @@ Hessian:
     \DecValTok{3}\SpecialCharTok{*}\NormalTok{x}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{{-}} \DecValTok{2}
 \NormalTok{  \}}
   
+  \CommentTok{\# Training loop}
   \ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
 \NormalTok{    beta\_new }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ (}\FunctionTok{grad}\NormalTok{(beta) }\SpecialCharTok{/} \FunctionTok{hessian}\NormalTok{(beta))}
 \NormalTok{    betas\_vec[i}\SpecialCharTok{+}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
@@ -449,10 +435,13 @@ that isn't possible(if the function cannot be plotted or is very
 complex), I would try to build a vector of possible starting points and
 perform a grid search where we run the algorithm on multiple starting
 points and various parameters. This would allow us to find a starting
-point where the algorithm would converge. From the lecture slides, there
-are alternative Newton's algorithms like Newton's algorithm with
-damping, which I would implement if there is too much trouble with the
-pure Newton's algorithm.
+point where the algorithm would converge. Although the grid search is an
+easy fix, switching algorithms is a better fix. From the lecture slides,
+there are alternative Newton's algorithms like the Levenberg-Marquard
+algorithm, which is a fix for when the Hessian is not positive definite
+by essentially translating the Hessian to positive definite through
+transforming the eigenvalues of the matrix, which I would implement if
+there is too much trouble with the pure Newton's algorithm.
 
 \newpage
 
@@ -465,21 +454,511 @@ correspond to the predictors and the last column to the response y.
 Lasso regression, by modifying appropriately your code from Homework
 1.}\label{part-i-implement-that-proximal-gradient-algorithm-for-lasso-regression-by-modifying-appropriately-your-code-from-homework-1.}
 
-To select a good value for the regularization parameter \(λ\) use the
-data in the validation data.csv to calculate the sum-of-squares error
-validation loss.
+Proximal Gradient Descent is good for problems in the form:
 
-The Proximal Gradient Descent Algorithm(LASSO):
+\[
+\underset{x}{\min} F(x) = f(x) + g(x), \space x \in \mathbb{R}^n
+\]
 
-\subsubsection{\texorpdfstring{Part(ii) Show a plot of the training and
-validation loss as a function of iterations. Report the number of
-regression coefficients estimated as zero based on the best value of
-\(λ\) you
-selected.}{Part(ii) Show a plot of the training and validation loss as a function of iterations. Report the number of regression coefficients estimated as zero based on the best value of λ you selected.}}\label{partii-show-a-plot-of-the-training-and-validation-loss-as-a-function-of-iterations.-report-the-number-of-regression-coefficients-estimated-as-zero-based-on-the-best-value-of-ux3bb-you-selected.}
+Where f and g are functions with a global minimum, f is differentiable,
+and g is not differentiable. In this case, we have
+\(MSE=f(x)=\frac{1}{n}||y-X\beta||_2^2\) and \(g(x)=\lambda||\beta||_1\)
+
+\textbf{The Proximal Gradient Descent Algorithm(General):}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Select \(x_0 \in \mathbb{R}^n\)
+\item
+  While stopping criterion \textgreater{} tolerance do:
+
+  \begin{enumerate}
+  \def\labelenumii{\arabic{enumii}.}
+  \tightlist
+  \item
+    \(y_k = x_k + \eta_k \nabla{f(x_k)}\)
+  \item
+    \(x_{k+1} = \text{prox}_{\eta_k,g}(y_k)\)
+  \item
+    Calculate value of stopping
+    criterion(\(|f(x_{k+1}) - f(x_k)| \leq \epsilon\))
+  \end{enumerate}
+\end{enumerate}
+
+Proximal Operator:
+\(\text{prox}_{\eta_k,g}(y_k) = \underset{x}{\text{argmin}}\{ g(x) + \frac{1}{2\eta_k}||x-y_k||^2_2 \}\),
+where,
+
+\begin{itemize}
+\item
+  \(\eta_k\) is the step size at the previous iteration,
+\item
+  \(y_k\) is the gradient step at the previous iteration,
+\item
+  \(\text{argmin}\) is the minimum value of the function
+\end{itemize}
+
+The Proximal Function for L1-Regularization(LASSO), as shown in class:
+
+\[
+\text{prox}_{t,\lambda||\cdot||_1}(z) = S_{t,\lambda}(z) = \text{sign}(z) \cdot \max(|z|-t\lambda,\space0)
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Params}
+\NormalTok{X\_train }\OtherTok{\textless{}{-}}\NormalTok{ train }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{y) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as.matrix}\NormalTok{()}
+\NormalTok{y\_train }\OtherTok{\textless{}{-}}\NormalTok{ train }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(y) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as.matrix}\NormalTok{()}
+\NormalTok{X\_val }\OtherTok{\textless{}{-}}\NormalTok{ val }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{y) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as.matrix}\NormalTok{()}
+\NormalTok{y\_val }\OtherTok{\textless{}{-}}\NormalTok{ val }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(y) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as.matrix}\NormalTok{()}
+
+
+\CommentTok{\# Implement Proximal Gradient Descent}
+\NormalTok{proximal\_gradient\_descent\_lasso }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(X, y, X\_val, y\_val, eta, lambda, tol, max\_iter) \{}
+\NormalTok{  n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(X)}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(X)}
+\NormalTok{  beta }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, p)}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter) }\CommentTok{\# obj values result}
+\NormalTok{  eta\_values }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# eta values result}
+\NormalTok{  sse\_train\_loss }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# SSE train loss result}
+\NormalTok{  sse\_val\_loss }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(max\_iter)  }\CommentTok{\# SSE test loss result}
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{nrow =}\NormalTok{ max\_iter, }\AttributeTok{ncol =}\NormalTok{ p) }\CommentTok{\# betas result}
+  
+  
+  \CommentTok{\# Objective function: Mean Squared Error (MSE)}
+\NormalTok{  obj\_function }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta) \{}
+    \FunctionTok{sum}\NormalTok{((X }\SpecialCharTok{\%*\%}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ y)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{) }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{2} \SpecialCharTok{*}\NormalTok{ n) }\SpecialCharTok{+}\NormalTok{ lambda }\SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(}\FunctionTok{abs}\NormalTok{(beta))}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Gradient function}
+\NormalTok{  gradient }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(beta) \{}
+    \FunctionTok{t}\NormalTok{(X) }\SpecialCharTok{\%*\%}\NormalTok{ (X }\SpecialCharTok{\%*\%}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ y) }\SpecialCharTok{/}\NormalTok{ n}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Proximal Function}
+\NormalTok{  prox }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(eta, lambda, y\_k) \{}
+    \FunctionTok{sign}\NormalTok{(y\_k) }\SpecialCharTok{*} \FunctionTok{pmax}\NormalTok{(}\FunctionTok{abs}\NormalTok{(y\_k) }\SpecialCharTok{{-}}\NormalTok{ eta }\SpecialCharTok{*}\NormalTok{ lambda, }\DecValTok{0}\NormalTok{)}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Grad Descent Step}
+  \ControlFlowTok{for}\NormalTok{ (iter }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{max\_iter) \{}
+\NormalTok{    grad }\OtherTok{\textless{}{-}} \FunctionTok{gradient}\NormalTok{(beta)}
+    
+\NormalTok{    y\_k }\OtherTok{\textless{}{-}}\NormalTok{ beta }\SpecialCharTok{{-}}\NormalTok{ eta }\SpecialCharTok{*}\NormalTok{ grad}
+\NormalTok{    beta\_new }\OtherTok{\textless{}{-}} \FunctionTok{prox}\NormalTok{(eta, lambda, y\_k)}
+    
+    \CommentTok{\# Storing the values for result}
+\NormalTok{    eta\_values[iter] }\OtherTok{\textless{}{-}}\NormalTok{ eta}
+\NormalTok{    beta\_values[iter, ] }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{    obj\_values[iter] }\OtherTok{\textless{}{-}} \FunctionTok{obj\_function}\NormalTok{(beta\_new)}
+    \CommentTok{\# Storing the SSE losses}
+    \CommentTok{\# get prediction and calculate SSE{-}train{-}loss}
+    \CommentTok{\# y = XB}
+\NormalTok{    y\_pred }\OtherTok{\textless{}{-}}\NormalTok{ X }\SpecialCharTok{\%*\%}\NormalTok{ beta\_new}
+\NormalTok{    sse\_train\_loss[iter] }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((y }\SpecialCharTok{{-}}\NormalTok{ y\_pred)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+    
+    \CommentTok{\# get prediction and calculate SSE{-}val{-}loss}
+    \CommentTok{\# y = XB}
+\NormalTok{    y\_pred }\OtherTok{\textless{}{-}}\NormalTok{ X\_val }\SpecialCharTok{\%*\%}\NormalTok{ beta\_new}
+\NormalTok{    sse\_val\_loss[iter] }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((y\_val }\SpecialCharTok{{-}}\NormalTok{ y\_pred)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+    
+    \CommentTok{\# Stop crit}
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{norm}\NormalTok{(beta\_new }\SpecialCharTok{{-}}\NormalTok{ beta, }\AttributeTok{type =} \StringTok{"2"}\NormalTok{) }\SpecialCharTok{\textless{}}\NormalTok{ tol) \{}\ControlFlowTok{break}\NormalTok{\}}
+    
+\NormalTok{    beta }\OtherTok{\textless{}{-}}\NormalTok{ beta\_new}
+\NormalTok{  \}}
+  
+\NormalTok{  beta\_values }\OtherTok{\textless{}{-}}\NormalTok{ beta\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter, ]}
+\NormalTok{  obj\_values }\OtherTok{\textless{}{-}}\NormalTok{ obj\_values[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{  sse\_train\_loss }\OtherTok{\textless{}{-}}\NormalTok{ sse\_train\_loss[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+\NormalTok{  sse\_val\_loss }\OtherTok{\textless{}{-}}\NormalTok{ sse\_val\_loss[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{iter]}
+
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{iterations=}\NormalTok{iter, }\AttributeTok{beta\_fin=}\NormalTok{beta, }\AttributeTok{beta\_values=}\NormalTok{beta\_values, }\AttributeTok{obj\_values=}\NormalTok{obj\_values, }\AttributeTok{eta\_values=}\NormalTok{eta\_values, }\AttributeTok{eta=}\NormalTok{eta, }\AttributeTok{lambda=}\NormalTok{lambda, }\AttributeTok{sse\_train\_loss=}\NormalTok{sse\_train\_loss, }\AttributeTok{sse\_val\_loss=}\NormalTok{sse\_val\_loss))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m1 }\OtherTok{\textless{}{-}} \FunctionTok{proximal\_gradient\_descent\_lasso}\NormalTok{(X\_train, y\_train, X\_val, y\_val, }\FloatTok{0.01}\NormalTok{, }\FloatTok{0.1}\NormalTok{, }\FloatTok{1e{-}6}\NormalTok{, }\DecValTok{10000}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Iterations:"}\NormalTok{, m1}\SpecialCharTok{$}\NormalTok{iterations, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Iterations: 6435 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Obj Values(Last 10):"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Obj Values(Last 10): 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{tail}\NormalTok{(m1}\SpecialCharTok{$}\NormalTok{obj\_values, }\AttributeTok{n =} \DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 10.55455 10.55455 10.55455 10.55455 10.55455 10.55455 10.55455 10.55455
+ [9] 10.55455 10.55455
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Final Beta(first 10):"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Final Beta(first 10): 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(m1}\SpecialCharTok{$}\NormalTok{beta\_fin[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{10}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1]  0.00000000  0.00000000  0.02960429  0.00000000  0.15895370  0.00000000
+ [7]  0.00000000  0.00000000 -0.02223592  0.00000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"SSE Train Loss(last 10):"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+SSE Train Loss(last 10): 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{tail}\NormalTok{(m1}\SpecialCharTok{$}\NormalTok{sse\_train\_loss, }\AttributeTok{n=}\DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 5923.782 5923.782 5923.782 5923.782 5923.782 5923.782 5923.782 5923.782
+ [9] 5923.782 5923.782
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"SSE Val Loss(last 10):"}\NormalTok{, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+SSE Val Loss(last 10): 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{tail}\NormalTok{(m1}\SpecialCharTok{$}\NormalTok{sse\_val\_loss, }\AttributeTok{n=}\DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+ [1] 3995.004 3995.003 3995.003 3995.003 3995.003 3995.003 3995.003 3995.003
+ [9] 3995.003 3995.003
+\end{verbatim}
+
+\subsubsection{\texorpdfstring{Part (ii) To select a good value for the
+regularization parameter \(λ\) use the data in the validation data.csv
+to calculate the sum-of-squares error validation
+loss.}{Part (ii) To select a good value for the regularization parameter λ use the data in the validation data.csv to calculate the sum-of-squares error validation loss.}}\label{part-ii-to-select-a-good-value-for-the-regularization-parameter-ux3bb-use-the-data-in-the-validation-data.csv-to-calculate-the-sum-of-squares-error-validation-loss.}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Grid Search Params}
+\NormalTok{tol }\OtherTok{\textless{}{-}} \FloatTok{1e{-}6}
+\NormalTok{max\_iter }\OtherTok{\textless{}{-}} \DecValTok{10000}
+\NormalTok{eta }\OtherTok{\textless{}{-}} \FloatTok{0.01}
+\NormalTok{lambdas }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \FloatTok{0.001}\NormalTok{,}
+  \FloatTok{0.01}\NormalTok{, }\FloatTok{0.02}\NormalTok{, }\FloatTok{0.05}\NormalTok{, }\FloatTok{0.08}\NormalTok{,}
+  \FloatTok{0.1}\NormalTok{, }\FloatTok{0.2}\NormalTok{, }\FloatTok{0.5}\NormalTok{,}
+  \DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{5}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{20}\NormalTok{, }\DecValTok{50}
+\NormalTok{)}
+\CommentTok{\#lambdas \textless{}{-} c(0.001, 0.01, 0.1)}
+
+\CommentTok{\# Initialize storing structures}
+\NormalTok{models\_df }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{Model =} \FunctionTok{integer}\NormalTok{(),}
+  \AttributeTok{Lambda =} \FunctionTok{numeric}\NormalTok{(),}
+  \AttributeTok{Iterations =} \FunctionTok{integer}\NormalTok{(),}
+  \AttributeTok{Converged =} \FunctionTok{logical}\NormalTok{(),}
+  \AttributeTok{SSE\_Train\_Loss =} \FunctionTok{numeric}\NormalTok{(),}
+  \AttributeTok{SSE\_Val\_Loss =} \FunctionTok{numeric}\NormalTok{()}
+\NormalTok{)}
+\NormalTok{models }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{()}
+
+\CommentTok{\# Running the Code}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(lambdas)) \{}
+    \CommentTok{\# train the model on specific lambda}
+\NormalTok{    lambda }\OtherTok{\textless{}{-}}\NormalTok{ lambdas[i]}
+\NormalTok{    result }\OtherTok{\textless{}{-}} \FunctionTok{proximal\_gradient\_descent\_lasso}\NormalTok{(X\_train, y\_train, X\_val, y\_val, eta, lambda, tol, max\_iter)}
+    
+    \CommentTok{\# get prediction and calculate SSE{-}train{-}loss}
+    \CommentTok{\# y = XB}
+\NormalTok{    y\_pred }\OtherTok{\textless{}{-}}\NormalTok{ X\_train }\SpecialCharTok{\%*\%}\NormalTok{ result}\SpecialCharTok{$}\NormalTok{beta\_fin}
+\NormalTok{    sse\_train\_loss }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((y\_train }\SpecialCharTok{{-}}\NormalTok{ y\_pred)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+    
+    \CommentTok{\# get prediction and calculate SSE{-}val{-}loss}
+    \CommentTok{\# y = XB}
+\NormalTok{    y\_pred }\OtherTok{\textless{}{-}}\NormalTok{ X\_val }\SpecialCharTok{\%*\%}\NormalTok{ result}\SpecialCharTok{$}\NormalTok{beta\_fin}
+\NormalTok{    sse\_val\_loss }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((y\_val }\SpecialCharTok{{-}}\NormalTok{ y\_pred)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+    
+    \CommentTok{\# Output the model}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Model:"}\NormalTok{, i, }\StringTok{"| Lambda:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{lambda, }\StringTok{"| Iterations:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{iterations, }\StringTok{"| Converged?:"}\NormalTok{, result}\SpecialCharTok{$}\NormalTok{iterations }\SpecialCharTok{\textless{}}\NormalTok{ max\_iter, }\StringTok{"| SSE Train Loss:"}\NormalTok{, sse\_train\_loss, }\StringTok{"| SSE Val Loss:"}\NormalTok{, sse\_val\_loss, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+    
+    \CommentTok{\# Store row in the results data frame}
+\NormalTok{    models\_df }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(models\_df, }\FunctionTok{data.frame}\NormalTok{(}
+      \AttributeTok{Model =}\NormalTok{ i,}
+      \AttributeTok{Lambda =}\NormalTok{ result}\SpecialCharTok{$}\NormalTok{lambda,}
+      \AttributeTok{Iterations =}\NormalTok{ result}\SpecialCharTok{$}\NormalTok{iterations,}
+      \AttributeTok{Converged =}\NormalTok{ result}\SpecialCharTok{$}\NormalTok{iterations }\SpecialCharTok{\textless{}}\NormalTok{ max\_iter,}
+      \AttributeTok{SSE\_Train\_Loss =}\NormalTok{ sse\_train\_loss,}
+      \AttributeTok{SSE\_Val\_Loss =}\NormalTok{ sse\_val\_loss}
+\NormalTok{    ))}
+    
+    \CommentTok{\# Store the model params in a list for later retrieval}
+\NormalTok{    models[[i]] }\OtherTok{\textless{}{-}}\NormalTok{ result}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+
+Model: 1 | Lambda: 0.001 | Iterations: 10000 | Converged?: FALSE | SSE Train Loss: 523.841 | SSE Val Loss: 18612.82 
+
+Model: 2 | Lambda: 0.01 | Iterations: 10000 | Converged?: FALSE | SSE Train Loss: 1128.191 | SSE Val Loss: 10146.82 
+
+Model: 3 | Lambda: 0.02 | Iterations: 10000 | Converged?: FALSE | SSE Train Loss: 1881.458 | SSE Val Loss: 6926.871 
+
+Model: 4 | Lambda: 0.05 | Iterations: 10000 | Converged?: FALSE | SSE Train Loss: 3670.824 | SSE Val Loss: 4674.736 
+
+Model: 5 | Lambda: 0.08 | Iterations: 7629 | Converged?: TRUE | SSE Train Loss: 5112.683 | SSE Val Loss: 4118.298 
+
+Model: 6 | Lambda: 0.1 | Iterations: 6435 | Converged?: TRUE | SSE Train Loss: 5923.782 | SSE Val Loss: 3995.003 
+
+Model: 7 | Lambda: 0.2 | Iterations: 3440 | Converged?: TRUE | SSE Train Loss: 8755.456 | SSE Val Loss: 4062.508 
+
+Model: 8 | Lambda: 0.5 | Iterations: 2045 | Converged?: TRUE | SSE Train Loss: 15849.07 | SSE Val Loss: 5859.498 
+
+Model: 9 | Lambda: 1 | Iterations: 1099 | Converged?: TRUE | SSE Train Loss: 27946.54 | SSE Val Loss: 10324.96 
+
+Model: 10 | Lambda: 2 | Iterations: 809 | Converged?: TRUE | SSE Train Loss: 39196.53 | SSE Val Loss: 14343.6 
+
+Model: 11 | Lambda: 5 | Iterations: 1 | Converged?: TRUE | SSE Train Loss: 39951.34 | SSE Val Loss: 14548.27 
+
+Model: 12 | Lambda: 10 | Iterations: 1 | Converged?: TRUE | SSE Train Loss: 39951.34 | SSE Val Loss: 14548.27 
+
+Model: 13 | Lambda: 20 | Iterations: 1 | Converged?: TRUE | SSE Train Loss: 39951.34 | SSE Val Loss: 14548.27 
+
+Model: 14 | Lambda: 50 | Iterations: 1 | Converged?: TRUE | SSE Train Loss: 39951.34 | SSE Val Loss: 14548.27 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{models\_df}
+\end{Highlighting}
+\end{Shaded}
+
+Model Lambda Iterations Converged SSE\_Train\_Loss SSE\_Val\_Loss 1 1
+1e-03 10000 FALSE 523.841 18612.824 2 2 1e-02 10000 FALSE 1128.191
+10146.815 3 3 2e-02 10000 FALSE 1881.458 6926.871 4 4 5e-02 10000 FALSE
+3670.824 4674.736 5 5 8e-02 7629 TRUE 5112.683 4118.298 6 6 1e-01 6435
+TRUE 5923.782 3995.003 7 7 2e-01 3440 TRUE 8755.456 4062.508 8 8 5e-01
+2045 TRUE 15849.066 5859.498 9 9 1e+00 1099 TRUE 27946.536 10324.959 10
+10 2e+00 809 TRUE 39196.533 14343.601 11 11 5e+00 1 TRUE 39951.338
+14548.269 12 12 1e+01 1 TRUE 39951.338 14548.269 13 13 2e+01 1 TRUE
+39951.338 14548.269 14 14 5e+01 1 TRUE 39951.338 14548.269
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{latex\_table }\OtherTok{\textless{}{-}} \FunctionTok{xtable}\NormalTok{(models\_df, }\AttributeTok{digits =} \DecValTok{4}\NormalTok{, }\AttributeTok{caption =} \StringTok{"Model Results For Different Lambdas"}\NormalTok{)}
+\FunctionTok{print}\NormalTok{(latex\_table, }\AttributeTok{include.rownames =} \ConstantTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\% latex table generated in R 4.5.0 by xtable 1.8-4 package \% Wed Jun 4
+21:48:25 2025
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrlrr}
+  \hline
+Model & Lambda & Iterations & Converged & SSE\_Train\_Loss & SSE\_Val\_Loss \\ 
+  \hline
+    1 & 0.0010 & 10000 & FALSE & 523.8410 & 18612.8235 \\ 
+      2 & 0.0100 & 10000 & FALSE & 1128.1908 & 10146.8151 \\ 
+      3 & 0.0200 & 10000 & FALSE & 1881.4576 & 6926.8709 \\ 
+      4 & 0.0500 & 10000 & FALSE & 3670.8241 & 4674.7357 \\ 
+      5 & 0.0800 &  7629 & TRUE & 5112.6825 & 4118.2976 \\ 
+      6 & 0.1000 &  6435 & TRUE & 5923.7823 & 3995.0029 \\ 
+      7 & 0.2000 &  3440 & TRUE & 8755.4563 & 4062.5080 \\ 
+      8 & 0.5000 &  2045 & TRUE & 15849.0656 & 5859.4978 \\ 
+      9 & 1.0000 &  1099 & TRUE & 27946.5359 & 10324.9595 \\ 
+     10 & 2.0000 &   809 & TRUE & 39196.5329 & 14343.6008 \\ 
+     11 & 5.0000 &     1 & TRUE & 39951.3385 & 14548.2692 \\ 
+     12 & 10.0000 &     1 & TRUE & 39951.3385 & 14548.2692 \\ 
+     13 & 20.0000 &     1 & TRUE & 39951.3385 & 14548.2692 \\ 
+     14 & 50.0000 &     1 & TRUE & 39951.3385 & 14548.2692 \\ 
+   \hline
+\end{tabular}
+\caption{Model Results For Different Lambdas} 
+\end{table}
+
+\subsubsection{Part(iii) Show a plot of the training and validation loss
+as a function of
+iterations.}\label{partiii-show-a-plot-of-the-training-and-validation-loss-as-a-function-of-iterations.}
+
+Getting the Data:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# build a big data frame}
+\NormalTok{big\_df }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{Lambda =} \FunctionTok{numeric}\NormalTok{(),}
+  \AttributeTok{Iterations =} \FunctionTok{integer}\NormalTok{(),}
+  \AttributeTok{SSE\_Train\_Loss =} \FunctionTok{numeric}\NormalTok{(),}
+  \AttributeTok{SSE\_Val\_Loss =} \FunctionTok{numeric}\NormalTok{()}
+\NormalTok{)}
+\CommentTok{\# get the SSE data and put it in the data frame}
+\ControlFlowTok{for}\NormalTok{(model }\ControlFlowTok{in}\NormalTok{ models) \{}
+\NormalTok{  sub\_df }\OtherTok{\textless{}{-}} \FunctionTok{cbind}\NormalTok{(}\AttributeTok{Lambda =}\NormalTok{ model}\SpecialCharTok{$}\NormalTok{lambda, }\AttributeTok{Iteration =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{model}\SpecialCharTok{$}\NormalTok{iterations, }\AttributeTok{SSE\_Train\_Loss =}\NormalTok{ model}\SpecialCharTok{$}\NormalTok{sse\_train\_loss, }\AttributeTok{SSE\_Val\_Loss =}\NormalTok{ model}\SpecialCharTok{$}\NormalTok{sse\_val\_loss)}
+\NormalTok{  big\_df }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(big\_df, sub\_df)}
+\NormalTok{\}}
+
+\NormalTok{big\_df }\OtherTok{\textless{}{-}}\NormalTok{ big\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{Lambda =} \FunctionTok{factor}\NormalTok{(Lambda))}
+
+\FunctionTok{head}\NormalTok{(big\_df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+  Lambda Iteration SSE_Train_Loss SSE_Val_Loss
+1  0.001         1       38360.91     14184.63
+2  0.001         2       36873.68     13842.38
+3  0.001         3       35481.71     13519.99
+4  0.001         4       34177.75     13216.04
+5  0.001         5       32955.15     12929.25
+6  0.001         6       31807.80     12658.40
+\end{verbatim}
 
 Plotting Training Loss:
 
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{big\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{Iteration, }\AttributeTok{y=}\NormalTok{SSE\_Train\_Loss, }\AttributeTok{color=}\NormalTok{Lambda)) }\SpecialCharTok{+} 
+    \FunctionTok{geom\_line}\NormalTok{() }\SpecialCharTok{+} 
+    \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+} 
+    \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Training Loss"}\NormalTok{) }\SpecialCharTok{+} 
+    \FunctionTok{ylab}\NormalTok{(}\StringTok{"SSE Train Loss"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{506021334_stats102b_hw4_files/figure-pdf/2-3-train-loss-1.pdf}}
+
 Plotting Validation Loss:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{big\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{Iteration, }\AttributeTok{y=}\NormalTok{SSE\_Val\_Loss, }\AttributeTok{color=}\NormalTok{Lambda)) }\SpecialCharTok{+} 
+    \FunctionTok{geom\_line}\NormalTok{() }\SpecialCharTok{+} 
+    \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+} 
+    \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Validation Loss"}\NormalTok{) }\SpecialCharTok{+} 
+    \FunctionTok{ylab}\NormalTok{(}\StringTok{"SSE Validation Loss"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{506021334_stats102b_hw4_files/figure-pdf/2-3-validation-loss-1.pdf}}
+
+\subsubsection{\texorpdfstring{Part(iv) Report the number of regression
+coefficients estimated as zero based on the best value of \(λ\) you
+selected.}{Part(iv) Report the number of regression coefficients estimated as zero based on the best value of λ you selected.}}\label{partiv-report-the-number-of-regression-coefficients-estimated-as-zero-based-on-the-best-value-of-ux3bb-you-selected.}
+
+Output the table of the best model
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{models\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(SSE\_Val\_Loss)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+   Model Lambda Iterations Converged SSE_Train_Loss SSE_Val_Loss
+1      6  1e-01       6435      TRUE       5923.782     3995.003
+2      7  2e-01       3440      TRUE       8755.456     4062.508
+3      5  8e-02       7629      TRUE       5112.683     4118.298
+4      4  5e-02      10000     FALSE       3670.824     4674.736
+5      8  5e-01       2045      TRUE      15849.066     5859.498
+6      3  2e-02      10000     FALSE       1881.458     6926.871
+7      2  1e-02      10000     FALSE       1128.191    10146.815
+8      9  1e+00       1099      TRUE      27946.536    10324.959
+9     10  2e+00        809      TRUE      39196.533    14343.601
+10    11  5e+00          1      TRUE      39951.338    14548.269
+11    12  1e+01          1      TRUE      39951.338    14548.269
+12    13  2e+01          1      TRUE      39951.338    14548.269
+13    14  5e+01          1      TRUE      39951.338    14548.269
+14     1  1e-03      10000     FALSE        523.841    18612.824
+\end{verbatim}
+
+The best lambda that we found was 0.1
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# print(models[[6]]$beta\_fin)}
+\NormalTok{models[[}\DecValTok{6}\NormalTok{]]}\SpecialCharTok{$}\NormalTok{lambda}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(}\FunctionTok{abs}\NormalTok{(models[[}\DecValTok{6}\NormalTok{]]}\SpecialCharTok{$}\NormalTok{beta\_fin) }\SpecialCharTok{\textless{}} \FloatTok{1e{-}6}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 380
+\end{verbatim}
+
+There were 380 coefficients that were shrunk to 0 for the model that had
+a lambda of 0.1
 
 
 

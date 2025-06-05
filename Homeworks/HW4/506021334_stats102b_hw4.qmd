@@ -20,6 +20,7 @@ Due Wed, June 4, 11:00 pm
 set.seed(777)
 library(tidyverse)
 library(xtable)
+library(ggplot2)
 train <- read_csv("train_data.csv")
 val <- read_csv("validation_data.csv")
 ```
@@ -164,20 +165,20 @@ y_val <- val %>%
 
 
 # Implement Proximal Gradient Descent
-proximal_gradient_descent_lasso <- function(X, y, eta, lambda, tol, max_iter) {
+proximal_gradient_descent_lasso <- function(X, y, X_val, y_val, eta, lambda, tol, max_iter) {
   n <- nrow(X)
   p <- ncol(X)
   beta <- rep(0, p)
-  obj_values <- c() # obj values result
-  eta_values <- c()  # eta values result
-  sse_train_loss <- c()  # SSE train loss result
-  sse_test_loss <- c()  # SSE test loss result
+  obj_values <- numeric(max_iter) # obj values result
+  eta_values <- numeric(max_iter)  # eta values result
+  sse_train_loss <- numeric(max_iter)  # SSE train loss result
+  sse_val_loss <- numeric(max_iter)  # SSE test loss result
   beta_values <- matrix(0, nrow = max_iter, ncol = p) # betas result
   
   
   # Objective function: Mean Squared Error (MSE)
   obj_function <- function(beta) {
-    sum((X %*% beta - y)^2) / (2 * n)
+    sum((X %*% beta - y)^2) / (2 * n) + lambda * sum(abs(beta))
   }
   
   # Gradient function
@@ -204,8 +205,8 @@ proximal_gradient_descent_lasso <- function(X, y, eta, lambda, tol, max_iter) {
     # Storing the SSE losses
     # get prediction and calculate SSE-train-loss
     # y = XB
-    y_pred <- X_train %*% beta_new
-    sse_train_loss[iter] <- sum((y_train - y_pred)^2)
+    y_pred <- X %*% beta_new
+    sse_train_loss[iter] <- sum((y - y_pred)^2)
     
     # get prediction and calculate SSE-val-loss
     # y = XB
@@ -218,12 +219,17 @@ proximal_gradient_descent_lasso <- function(X, y, eta, lambda, tol, max_iter) {
     beta <- beta_new
   }
   
+  beta_values <- beta_values[1:iter, ]
+  obj_values <- obj_values[1:iter]
+  sse_train_loss <- sse_train_loss[1:iter]
+  sse_val_loss <- sse_val_loss[1:iter]
+
   return(list(iterations=iter, beta_fin=beta, beta_values=beta_values, obj_values=obj_values, eta_values=eta_values, eta=eta, lambda=lambda, sse_train_loss=sse_train_loss, sse_val_loss=sse_val_loss))
 }
 ```
 
 ```{r}
-m1 <- proximal_gradient_descent_lasso(X_train, y_train, 0.01, 0.1, 1e-6, 10000)
+m1 <- proximal_gradient_descent_lasso(X_train, y_train, X_val, y_val, 0.01, 0.1, 1e-6, 10000)
 ```
 
 ```{r}
@@ -245,13 +251,13 @@ tail(m1$sse_val_loss, n=10)
 tol <- 1e-6
 max_iter <- 10000
 eta <- 0.01
-# lambdas <- c(
-#   0.001,
-#   0.01, 0.02, 0.05,
-#   0.1, 0.2, 0.5,
-#   1, 2, 5, 10, 20, 50
-# )
-lambdas <- c(0.001, 0.01, 0.1)
+lambdas <- c(
+  0.001,
+  0.01, 0.02, 0.05, 0.08,
+  0.1, 0.2, 0.5,
+  1, 2, 5, 10, 20, 50
+)
+#lambdas <- c(0.001, 0.01, 0.1)
 
 # Initialize storing structures
 models_df <- data.frame(
@@ -268,7 +274,7 @@ models <- list()
 for (i in 1:length(lambdas)) {
     # train the model on specific lambda
     lambda <- lambdas[i]
-    result <- proximal_gradient_descent_lasso(X_train, y_train, eta, lambda, tol, max_iter)
+    result <- proximal_gradient_descent_lasso(X_train, y_train, X_val, y_val, eta, lambda, tol, max_iter)
     
     # get prediction and calculate SSE-train-loss
     # y = XB
@@ -298,8 +304,8 @@ for (i in 1:length(lambdas)) {
 }
 ```
 
-```{r}
-# models_df
+```{r, results='asis'}
+models_df
 latex_table <- xtable(models_df, digits = 4, caption = "Model Results For Different Lambdas")
 print(latex_table, include.rownames = FALSE)
 ```
@@ -307,23 +313,66 @@ print(latex_table, include.rownames = FALSE)
 
 ### Part(iii) Show a plot of the training and validation loss as a function of iterations. 
 
-Getting the Best Candidates:
+Getting the Data:
+
+```{r}
+# build a big data frame
+big_df <- data.frame(
+  Lambda = numeric(),
+  Iterations = integer(),
+  SSE_Train_Loss = numeric(),
+  SSE_Val_Loss = numeric()
+)
+# get the SSE data and put it in the data frame
+for(model in models) {
+  sub_df <- cbind(Lambda = model$lambda, Iteration = 1:model$iterations, SSE_Train_Loss = model$sse_train_loss, SSE_Val_Loss = model$sse_val_loss)
+  big_df <- rbind(big_df, sub_df)
+}
+
+big_df <- big_df %>%
+  mutate(Lambda = factor(Lambda))
+
+head(big_df)
+```
+
 
 Plotting Training Loss:
 
 ```{r 2-3-train-loss}
-
+big_df %>%
+  ggplot(aes(x=Iteration, y=SSE_Train_Loss, color=Lambda)) + 
+    geom_line() + 
+    theme_minimal() + 
+    ggtitle("Training Loss") + 
+    ylab("SSE Train Loss")
 ```
 
 Plotting Validation Loss:
 
 ```{r 2-3-validation-loss}
-
+big_df %>%
+  ggplot(aes(x=Iteration, y=SSE_Val_Loss, color=Lambda)) + 
+    geom_line() + 
+    theme_minimal() + 
+    ggtitle("Validation Loss") + 
+    ylab("SSE Validation Loss")
 ```
 
 ### Part(iv) Report the number of regression coefficients estimated as zero based on the best value of $λ$ you selected.
 
-```{r}
+Output the table of the best model
 
+```{r}
+models_df %>%
+  arrange(SSE_Val_Loss)
 ```
 
+The best lambda that we found was 0.1
+
+```{r 2-4}
+# print(models[[6]]$beta_fin)
+models[[6]]$lambda
+sum(abs(models[[6]]$beta_fin) < 1e-6)
+```
+
+There were 380 coefficients that were shrunk to 0 for the model that had a lambda of 0.1

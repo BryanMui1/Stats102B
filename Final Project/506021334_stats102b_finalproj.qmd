@@ -1,0 +1,28 @@
+---
+title: "Stats 102B Final Project"
+author: "Bryan Mui - UID 506021334"
+execute:
+  cache: true
+format:
+  pdf:
+    geometry: left=0.3in, right=0.3in, top=0.3in, bottom=0.3in
+    keep-tex: true
+    include-in-header:
+       text: |
+         \usepackage{fvextra}
+         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+         \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+# Problem 1:
+
+Consider the three data sets (regression data node1.csv, regression data node2.csv, regression data node3.csv) comprising a response variable y and 600 predictors $X1, · · · , X600$
+
+```{r}
+
+```
+
+
+## Part (a)
+
+## Part (b)

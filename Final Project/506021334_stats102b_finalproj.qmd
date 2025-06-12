@@ -14,15 +14,172 @@ format:
          \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
+```{r figure-sizes, include=FALSE}
+knitr::opts_chunk$set(
+  fig.align = "center",      # center figures
+  fig.width = 6.5,           # width in inches (PDF page is ~6.5 inches wide with 0.3in margins)
+  out.width = "100%"         # fill available width
+)
+```
+
 # Problem 1:
 
-Consider the three data sets (regression data node1.csv, regression data node2.csv, regression data node3.csv) comprising a response variable y and 600 predictors $X1, · · · , X600$
+Consider the three data sets (regression data node1.csv, regression data node2.csv, regression data node3.csv) comprising a response variable y and 600 predictors $X_1, · · · , X_{600}$
 
-```{r}
-
+```{r read-csv}
+library(tidyverse)
+test_data <- read_csv("./test_data.csv")
+node1 <- read_csv("./regression_data_node1.csv")
+node2 <- read_csv("./regression_data_node2.csv")
+node3 <- read_csv("./regression_data_node3.csv")
 ```
 
 
 ## Part (a)
 
+Write code to implement the coordinate descent algorithm for lasso regression
+
+Pseudo Code(Coordinate Descent for Linear Regression):
+
+1. Initialize $B_0 \in \mathbb{R}^p$, objective function, proximal gradient function
+2. While stopping criterion > tolerance do:  
+  * For j = 1,...,p:  
+    + Calculate the residual $r_j$
+    + Calculate $\beta_j$ using the proximal gradient function
+  * Calculate the value of the stopping criterion
+
+Objective Function: 
+
+$$
+\underset{\beta_j}{\min} \frac{1}{2n} ||r_j - \beta_j x_j||_2^2 + \lambda|\beta_j| = f(\beta) + \lambda g(\beta)
+$$
+
+Proximal Gradient Function:
+
+$$
+\tilde{\beta}_j = \frac{\beta_j^\mathsf{T}x_j}{x_j^\mathsf{T}x_j}
+$$
+  
+
+```{r coord-desc-lasso-implementation}
+# Implement Proximal Gradient Descent
+proximal_gradient_descent_lasso <- function(X, y, X_val, y_val, eta, lambda, tol, max_iter) {
+  n <- nrow(X)
+  p <- ncol(X)
+  beta <- rep(0, p)
+  obj_values <- numeric(max_iter) # obj values result
+  eta_values <- numeric(max_iter)  # eta values result
+  sse_train_loss <- numeric(max_iter)  # SSE train loss result
+  sse_val_loss <- numeric(max_iter)  # SSE test loss result
+  beta_values <- matrix(0, nrow = max_iter, ncol = p) # betas result
+  
+  
+  # Objective function: Mean Squared Error (MSE)
+  obj_function <- function(beta) {
+    sum((X %*% beta - y)^2) / (2 * n) + lambda * sum(abs(beta))
+  }
+  
+  # Gradient function
+  gradient <- function(beta) {
+    t(X) %*% (X %*% beta - y) / n
+  }
+  
+  # Proximal Function
+  prox <- function(eta, lambda, y_k) {
+    sign(y_k) * pmax(abs(y_k) - eta * lambda, 0)
+  }
+  
+  # Grad Descent Step
+  for (iter in 1:max_iter) {
+    grad <- gradient(beta)
+    
+    y_k <- beta - eta * grad
+    beta_new <- prox(eta, lambda, y_k)
+    
+    # Storing the values for result
+    eta_values[iter] <- eta
+    beta_values[iter, ] <- beta_new
+    obj_values[iter] <- obj_function(beta_new)
+    # Storing the SSE losses
+    # get prediction and calculate SSE-train-loss
+    # y = XB
+    y_pred <- X %*% beta_new
+    sse_train_loss[iter] <- sum((y - y_pred)^2)
+    
+    # get prediction and calculate SSE-val-loss
+    # y = XB
+    y_pred <- X_val %*% beta_new
+    sse_val_loss[iter] <- sum((y_val - y_pred)^2)
+    
+    # Stop crit
+    if (norm(beta_new - beta, type = "2") < tol) {break}
+    
+    beta <- beta_new
+  }
+  
+  beta_values <- beta_values[1:iter, ]
+  obj_values <- obj_values[1:iter]
+  sse_train_loss <- sse_train_loss[1:iter]
+  sse_val_loss <- sse_val_loss[1:iter]
+
+  return(list(iterations=iter, beta_fin=beta, beta_values=beta_values, obj_values=obj_values, eta_values=eta_values, eta=eta, lambda=lambda, sse_train_loss=sse_train_loss, sse_val_loss=sse_val_loss))
+}
+```
+
+Discuss which stopping criterion you decided to implement
+
+For each dataset, use the first 80% of the entries as the training set and the remaining 20% as the validation set. Use the validation data to tune the regularization parameter $λ > 0$ for the Lasso regression model.
+
+```{r train-test-split-1}
+# Node 1 split
+node1_train <- node1[1:(nrow(node1) * 0.8), ]
+node1_val <- node1[((nrow(node1) * 0.8)+1):nrow(node1), ]
+node1_train_X <- node1_train %>% select(-y)
+node1_train_Y <- node1_train %>% select(y)
+
+# Node 2 split
+node2_train <- node2[1:(nrow(node2) * 0.8), ]
+node2_val <- node2[((nrow(node2) * 0.8) + 1):nrow(node2), ]
+node2_train_X <- node2_train %>% select(-y)
+node2_train_Y <- node2_train %>% select(y)
+
+# Node 3 split
+node3_train <- node3[1:(nrow(node3) * 0.8), ]
+node3_val <- node3[((nrow(node3) * 0.8) + 1):nrow(node3), ]
+node3_train_X <- node3_train %>% select(-y)
+node3_train_Y <- node3_train %>% select(y)
+```
+
+
+### Sub (1) Report the values of the regularization parameter $λ$ that yielded the best models for each of the three data sets, based on validation loss.
+
+### Sub (2) For each data set, report the indices of the non-zero regression coefficients in the final selected model
+
+### Sub (3) Identify and report the indices of the regression coefficients that are non-zero across all three models (i.e., the intersection of non-zero coefficients)
+
+### Sub (4) Report the test loss of the final model selected for each data set, using the test data set
+
 ## Part (b)
+
+Since the three data sets differ in sample size, the regression coefficients estimated from each will naturally vary
+
+To address this, the owners of the three data sets agree to collaborate in estimating a shared regression coefficient vector, while strictly avoiding any direct sharing of their respective data sets
+
+They adopt the following algorithm:
+
+* Each data owner splits their data into 80% for training purposes and 20% for validation purposes (tuning the λ parameter).
+* Initializing with the zero vector, each owner runs 5 iterations of coordinate descent for lasso regression using a local regularization parameter $λ_k$.
+* After the local updates, each owner sends their current estimate of the regression vector to a trusted aggregator
+* The aggregator computes a weighted average of the received regression vectors, with weights proportional to the respective sample sizes, and broadcasts the resulting global estimate back to all owners.
+* This process repeats until the aggregator detects that the global regression vector has changed by less than a predefined tolerance (10−6) between two successive rounds
+
+Each data owner independently selects their tuning parameter $λ_k$, for k = 1, 2, 3, by minimizing the validation loss on their respective validation sets
+
+Once the aggregator determines that the algorithm has converged, it evaluates the final aggregated model using the available test data set
+
+### Sub (1) Report the values of the regularization parameters $λ_k$ selected by each data owner based on validation loss
+### Sub (2) Report the indices of the non-zero regression coefficients in the final aggregated model
+### Sub (3) Compute the confusion matrix between the regression coefficient reported by the aggregator (treated as the "ground truth") and each of the best three individual models computed in Part (a)
+### Sub (4) Report the test loss of the final selected model, evaluated on the test data set
+
+### Sub (5) How do you conclusions change, if the aggregation occurs every 10 iterations?
